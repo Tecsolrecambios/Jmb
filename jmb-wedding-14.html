@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="theme-color" content="#FFFFFF"/>
+  <title>Just Married Barcelona</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&family=Great+Vibes&display=swap" rel="stylesheet"/>
+  <!-- Firebase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.6/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:16px;-webkit-text-size-adjust:100%}
+    body{font-family:'Montserrat',sans-serif;background:#fff;color:#1C1C1C;min-height:100vh;-webkit-font-smoothing:antialiased}
+    #root{min-height:100vh}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:#E0DBD4;border-radius:3px}
+    select option{background:#fff;color:#1C1C1C}
+    .masonry{columns:3 200px;gap:14px}
+    .masonry-item{break-inside:avoid;margin-bottom:14px}
+    @media(max-width:640px){.masonry{columns:2 140px}.hide-sm{display:none!important}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .fade{animation:fadeUp 0.2s ease}
+  </style>
+</head>
+<body>
+<div id="root">
+  <div id="loading" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;font-family:Georgia,serif;">
+    <div style="font-size:36px;color:#1C1C1C;margin-bottom:8px;">Just Married</div>
+    <div style="font-size:11px;color:#aaa;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:32px;">Barcelona</div>
+    <div style="width:40px;height:40px;border:2px solid #E5E5E0;border-top-color:#1C1C1C;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <div style="font-size:12px;color:#aaa;margin-top:20px;">Loading…</div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var detail = err ? (err.message || err.toString()) : msg;
+  var isCSP = msg && msg.toLowerCase().indexOf('script') > -1 && line === 0;
+  var hint = isCSP ? '<div style="color:#888;font-size:11px;margin-top:12px;line-height:1.6">This app needs to be served from a web server.<br/>Opening as a local file blocks external scripts on mobile.</div>' : '';
+  document.getElementById('root').innerHTML = '<div style="padding:40px;font-family:sans-serif;max-width:420px;margin:0 auto;text-align:center"><div style="font-family:Georgia;font-size:28px;margin-bottom:6px;">Just Married</div><div style="font-size:11px;color:#aaa;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:24px;">Barcelona</div><div style="color:#dc2626;font-size:13px;font-weight:600;margin-bottom:8px;">Loading error</div><div style="color:#666;font-size:12px;line-height:1.6;background:#f8f8f8;padding:12px;border-radius:8px;">' + detail + '</div><div style="color:#888;font-size:11px;margin-top:8px">Line: ' + line + '</div>' + hint + '</div>';
+};
+</script>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef} = React;
+
+// ── Firebase Realtime Database ───────────────────────────────────────────────
+// Replace the config below with your Firebase project credentials
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBMqL0levZBF2uPOVuq5LfSiq7eLRUuU_c",
+  authDomain:        "jmbapp-72410.firebaseapp.com",
+  databaseURL:       "https://jmbapp-72410-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "jmbapp-72410",
+  storageBucket:     "jmbapp-72410.firebasestorage.app",
+  messagingSenderId: "170797034163",
+  appId:             "1:170797034163:web:efd8c5b5bc2fd3bd13dec6",
+};
+
+// Initialize Firebase
+firebase.initializeApp(FIREBASE_CONFIG);
+const firebaseDB = firebase.database();
+
+// db — reads/writes to Firebase, falls back to localStorage while offline
+const db = {
+  get: async (k) => {
+    try {
+      const snap = await firebaseDB.ref('jmb/' + k).once('value');
+      return snap.val();
+    } catch(e) {
+      try { const v = localStorage.getItem('jmb_'+k); return v ? JSON.parse(v) : null; } catch(e2){ return null; }
+    }
+  },
+  set: async (k, v) => {
+    try {
+      await firebaseDB.ref('jmb/' + k).set(v);
+      try { localStorage.setItem('jmb_'+k, JSON.stringify(v)); } catch(e){}
+    } catch(e) {
+      try { localStorage.setItem('jmb_'+k, JSON.stringify(v)); } catch(e2){}
+    }
+  },
+  // Real-time listener — calls callback whenever data changes
+  listen: (k, callback) => {
+    firebaseDB.ref('jmb/' + k).on('value', snap => callback(snap.val()));
+    return () => firebaseDB.ref('jmb/' + k).off();
+  },
+};
+
+// ── Default data ─────────────────────────────────────────────────────────────
+const DEF_ADMINS = [
+  {id:'a1',username:'admin', password:'justmarried',name:'JMB Admin',role:'owner'},
+  {id:'a2',username:'anna',  password:'jmb2025',    name:'Anna',     role:'planner'},
+  {id:'a3',username:'judit', password:'jmb2025',    name:'Judit',    role:'planner'},
+];
+
+const DEF_CLIENT = {
+  id:'caitlin-gus',bride:'Caitlin',groom:'Gus',
+  date:'2025-08-16',venue:'Xalet del Nin',location:'Vilanova i la Geltrú, Barcelona',
+  guests:{adults:77,children:2},budget:117079.23,budgetPaid:109696.24,
+  leadId:'a2',collaboratorIds:['a3'],
+  coupleUser:'caitlingus',couplePass:'xalet2025',
+  visibleTabs:['roadmap','vendors','design','moodboard','rundown'],
+  hiddenRoadmapIds:[],
+  style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'Elevated Dinner Party · Elegant · Sophisticated · Classic with Modern Twist',linen:'White Albero Tablecloth · White Napkin',chairs:'Tiffany Chair',glassware:'Power Glassware',cutlery:'Picasso Cutlery',centerpiece:'Florals, Silver Dishes & Candles. No fruit, no pearls.',notes:'2 Long Tables + Top Table. Cava Tower upon entrance.'},
+  designZones:{},
+  moodboard:[],
+  roadmap:[
+    {id:'r1',category:'Venue',        item:'Xalet del Nin',               status:'confirmed',  notes:'Down payment paid Dec.',dueDate:'2025-08-11',adminOnly:false},
+    {id:'r2',category:'Catering',     item:'Sensacions',                  status:'confirmed',  notes:'Last payment pending.',  dueDate:'2025-08-16',adminOnly:false},
+    {id:'r3',category:'Florals',      item:'Flors Amelia',                status:'confirmed',  notes:'€2,000 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r4',category:'Photo',        item:'Lara Onac Team',              status:'confirmed',  notes:'Next payment 2nd Aug.',  dueDate:'2025-08-02',adminOnly:false},
+    {id:'r5',category:'MUAH',         item:'Teresa Snowball',             status:'confirmed',  notes:'Paid in full.',          dueDate:'2025-08-10',adminOnly:false},
+    {id:'r6',category:'Transport',    item:'Dotor – Bus',                 status:'confirmed',  notes:'Last payment July 16th.',dueDate:'2025-07-16',adminOnly:false},
+    {id:'r7',category:'Live Music',   item:'Emilio – Guitar',             status:'confirmed',  notes:'Due wedding day.',       dueDate:'2025-08-16',adminOnly:false},
+    {id:'r8',category:'Live Music',   item:'Tu Musica Events',            status:'confirmed',  notes:'€1,300 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r9',category:'DJ',           item:'Suit & Music',                status:'confirmed',  notes:'€675 pending.',          dueDate:'2025-08-16',adminOnly:false},
+    {id:'r10',category:'AV',          item:'Raich',                       status:'confirmed',  notes:'€3,960 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r11',category:'Officiant',   item:'Ludo – MC',                   status:'confirmed',  notes:'€300 pending.',          dueDate:'2025-08-16',adminOnly:false},
+    {id:'r12',category:'Stationery',  item:'Menus, seating plan',         status:'in-progress',notes:'Pending confirmation.',  dueDate:'2025-07-01',adminOnly:false},
+    {id:'r13',category:'Transport',   item:'Driverlux – Airport transfer',status:'confirmed',  notes:'Paid in full.',          dueDate:'2025-08-18',adminOnly:false},
+    {id:'r14',category:'Welcome',     item:'El Vivero Sitges',            status:'confirmed',  notes:'Rest before wedding.',   dueDate:'2025-08-14',adminOnly:false},
+    {id:'r15',category:'Deposit',     item:'Xalet del Nin – Refundable €1,500',status:'pending',notes:'Pay August 10th.',     dueDate:'2025-08-10',adminOnly:true},
+  ],
+  vendors:[
+    {id:'v1', cat:'Venue',        name:'Xalet del Nin',   social:'https://instagram.com/xaletdelnin',             sType:'instagram',phone:'628.558.678', contact:'',              notes:'Wedding & Pool Party',confirmed:true, adminOnly:false,docs:[]},
+    {id:'v2', cat:'Welcome',      name:'El Vivero',        social:'https://instagram.com/vivero_beach_club_sitges', sType:'instagram',phone:'638.405.277', contact:'',              notes:'Welcome event',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v3', cat:'Catering',     name:'Sensacions',       social:'https://instagram.com/sensacionsbarcelona',      sType:'instagram',phone:'',           contact:'Maria 685803291',notes:'All catering',         confirmed:true, adminOnly:false,docs:[]},
+    {id:'v4', cat:'Florals',      name:'Flors Amelia',     social:'https://instagram.com/florsamelia',              sType:'instagram',phone:'',           contact:'Guillem 656392656',notes:'Full floral & decor',confirmed:true, adminOnly:false,docs:[]},
+    {id:'v5', cat:'Photo',        name:'Lara Onac Team',   social:'https://instagram.com/laraonac',                 sType:'instagram',phone:'',           contact:'',              notes:'Photo + video',        confirmed:true, adminOnly:false,docs:[]},
+    {id:'v6', cat:'AV',           name:'Raich',            social:'https://instagram.com/raich_av',                 sType:'instagram',phone:'',           contact:'Anna 692021442',notes:'Sound & lighting',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v7', cat:'Live Music',   name:'Emilio',           social:'',                                               sType:'instagram',phone:'722331695',  contact:'',              notes:'Spanish guitar',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v8', cat:'Live Music',   name:'Tu Musica Events', social:'https://instagram.com/tumusicaevents',           sType:'instagram',phone:'660192558',  contact:'',              notes:'Party band',           confirmed:true, adminOnly:false,docs:[]},
+    {id:'v9', cat:'DJ',           name:'Suit & Music',     social:'',                                               sType:'instagram',phone:'',           contact:'Ivan',          notes:'DJ',                   confirmed:true, adminOnly:false,docs:[]},
+    {id:'v10',cat:'MUAH',         name:'Teresa Snowball',  social:'https://instagram.com/teresasnowball_co',        sType:'instagram',phone:'627.638.763',contact:'',              notes:'Bride + 4 ladies',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v11',cat:'Officiant',    name:'Ludo',             social:'https://instagram.com/ludotalks',                sType:'instagram',phone:'678 540 799', contact:'',             notes:'Officiant & MC',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v12',cat:'Transport',    name:'Dotor',            social:'',                                               sType:'instagram',phone:'938.180.611',contact:'',              notes:'Bus Sitges-Xalet',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v13',cat:'Transport',    name:'Driverlux',        social:'',                                               sType:'instagram',phone:'',           contact:'',              notes:'Mini vans + airport',  confirmed:true, adminOnly:false,docs:[]},
+  ],
+  family:{bride:[
+    {id:'b1',name:'Julie',relation:'Mum',notes:'Toast at dinner'},
+    {id:'b2',name:'Ken',  relation:'Dad',notes:'Father of bride speech'},
+    {id:'b3',name:'Erin', relation:'Sister',notes:'Reading 2. H&MK'},
+    {id:'b4',name:'Tom',  relation:"Sister's partner",notes:'Reading 1'},
+  ],groom:[
+    {id:'g1',name:'Helen', relation:'Mum',notes:'Toast at dinner'},
+    {id:'g2',name:'Tom',   relation:'Dad',notes:''},
+    {id:'g3',name:'Bella', relation:'Sister',notes:'H&MK. Walks in ceremony'},
+    {id:'g4',name:'Bibi, Bo, Zebi, Wilfred',relation:"Sister's kids",notes:'Ring bearers'},
+    {id:'g5',name:'Will',  relation:'Brother',notes:''},
+  ]},
+  rundown:{days:[]},
+  setup:JSON.parse(JSON.stringify(SETUP_TEMPLATE)),
+  inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},
+  instagramHandles:{},
+      guestCounts:{},
+      budgetLines:{},
+};
+
+
+// ── JMB Default Roadmap Template (pre-loaded for every new couple) ───────────
+const JMB_ROADMAP_TEMPLATE = [
+  // VENUE & ACCOMMODATION
+  {category:'Venue',        item:'Wedding Venue',                    status:'waiting', notes:'Confirm availability for wedding date. Request proposal & contract.',       adminOnly:false},
+  {category:'Venue',        item:'Welcome Event Venue',              status:'waiting', notes:'Confirm availability. Request proposal.',                                   adminOnly:false},
+  {category:'Venue',        item:'Post-Wedding / Pool Party Venue',  status:'waiting', notes:'Confirm availability. Request proposal.',                                   adminOnly:false},
+  {category:'Venue',        item:'Hotel for wedding party',          status:'waiting', notes:'Block rooms. Confirm check-in / check-out dates.',                          adminOnly:false},
+  {category:'Venue',        item:'Hotel for guests (recommended)',   status:'waiting', notes:'Send recommendations with discount code if possible.',                      adminOnly:false},
+  // CATERING
+  {category:'Catering',     item:'Catering Company',                 status:'waiting', notes:'Request proposals for welcome dinner + wedding day + pool party menus.',    adminOnly:false},
+  {category:'Catering',     item:'Menu Tasting',                     status:'waiting', notes:'Schedule tasting during inspection visit. Confirm final menu selection.',   adminOnly:false},
+  {category:'Catering',     item:'Wedding Cake / Dessert Table',     status:'waiting', notes:'Confirm if needed or if caterer includes.',                                  adminOnly:false},
+  // FLORALS & DECOR
+  {category:'Florals',      item:'Floral Design & Decor',            status:'waiting', notes:'Request proposals. Send mood board + colour palette.',                      adminOnly:false},
+  {category:'Florals',      item:'Decor Rentals (furniture, etc.)',  status:'waiting', notes:'Confirm what caterer/venue provides. Request extras if needed.',            adminOnly:false},
+  {category:'Florals',      item:'Stationery & Signage',             status:'waiting', notes:'Menus, seating plan, name cards, welcome sign, table numbers.',             adminOnly:false},
+  // PHOTO & VIDEO
+  {category:'Photo & Video',item:'Photographer',                     status:'waiting', notes:'Request proposals. Confirm hours of coverage + package.',                  adminOnly:false},
+  {category:'Photo & Video',item:'Videographer',                     status:'waiting', notes:'Request proposals. Confirm highlight film + full video.',                   adminOnly:false},
+  {category:'Photo & Video',item:'Photo Booth / Content Creator',    status:'waiting', notes:'Confirm if couple wants. Request proposals.',                               adminOnly:false},
+  // MUSIC & ENTERTAINMENT
+  {category:'AV & Lighting',item:'AV & Lighting Company',            status:'waiting', notes:'Confirm ceremony sound, dinner playlist, dance lighting.',                  adminOnly:false},
+  {category:'DJ',           item:'DJ',                               status:'waiting', notes:'Request proposals. Confirm hours + setlist preferences.',                   adminOnly:false},
+  {category:'Live Music',   item:'Ceremony Live Music',              status:'waiting', notes:'Guitar / string quartet / other. Confirm songs list.',                      adminOnly:false},
+  {category:'Live Music',   item:'Cocktail Live Music',              status:'waiting', notes:'Confirm artist + setlist.',                                                  adminOnly:false},
+  {category:'Live Music',   item:'Dinner / Party Band',              status:'waiting', notes:'Request proposals. Confirm sets + rider.',                                  adminOnly:false},
+  // BEAUTY
+  {category:'MUAH',         item:'Bridal MUAH (Hair & Makeup)',      status:'waiting', notes:'Book trial. Confirm services for bride + wedding party.',                   adminOnly:false},
+  {category:'MUAH',         item:'MUAH Trial',                       status:'waiting', notes:'Schedule close to wedding date. Confirm look + timing.',                   adminOnly:false},
+  // OFFICIANT
+  {category:'Officiant',    item:'Officiant / MC',                   status:'waiting', notes:'Confirm ceremony type (civil / symbolic). Share vow guidelines.',          adminOnly:false},
+  // TRANSPORT
+  {category:'Transport',    item:'Guest Transport (bus/minivans)',    status:'waiting', notes:'Confirm pickup points + drop-off. Hotels ↔ Venue.',                        adminOnly:false},
+  {category:'Transport',    item:'Wedding Party Transport',          status:'waiting', notes:'Confirm car / minivan for bride & party on wedding day.',                  adminOnly:false},
+  {category:'Transport',    item:'Airport Transfer (couple)',        status:'waiting', notes:'Confirm pickup for honeymoon departure.',                                   adminOnly:false},
+  // PAPERWORK & LEGAL
+  {category:'Legal',        item:'Marriage License / Legal Documents',status:'waiting',notes:'Confirm legal requirements in Spain. Apostille, translations if needed.',  adminOnly:true},
+  {category:'Legal',        item:'Civil Registry Appointment',       status:'waiting', notes:'Book appointment at local registry if civil ceremony.',                     adminOnly:true},
+  // PLANNING MILESTONES
+  {category:'Planning',     item:'Save the Date sent',               status:'waiting', notes:'Recommended 12+ months before wedding.',                                   adminOnly:false},
+  {category:'Planning',     item:'Invitations sent',                 status:'waiting', notes:'Recommended 3–4 months before. Include RSVP deadline.',                   adminOnly:false},
+  {category:'Planning',     item:'Guest list & RSVPs confirmed',     status:'waiting', notes:'Final headcount needed for catering + seating plan.',                      adminOnly:false},
+  {category:'Planning',     item:'Dietary requirements collected',   status:'waiting', notes:'Send to caterer with final headcount.',                                     adminOnly:false},
+  {category:'Planning',     item:'Seating plan finalised',           status:'waiting', notes:'Complete once all RSVPs confirmed.',                                        adminOnly:false},
+  {category:'Planning',     item:'Final rundown shared with vendors',status:'waiting', notes:'Send 2 weeks before wedding. Confirm all timings.',                        adminOnly:false},
+  // INSPECTION VISIT
+  {category:'Inspection',   item:'Inspection visit booked',          status:'waiting', notes:'Venue + menu tasting + MUAH trial. Ideally 3–6 months before.',           adminOnly:false},
+  {category:'Inspection',   item:'Menu tasting confirmed',           status:'waiting', notes:'During inspection visit.',                                                  adminOnly:false},
+  {category:'Inspection',   item:'MUAH trial confirmed',             status:'waiting', notes:'Can be done during inspection visit or closer to date.',                   adminOnly:false},
+  // EXTRAS
+  {category:'Extras',       item:'Welcome bags / favours',           status:'waiting', notes:'Confirm if couple wants. Agree on contents + budget.',                     adminOnly:false},
+  {category:'Extras',       item:'Fireworks / Special effects',      status:'waiting', notes:'Confirm with venue if permitted. Request quotes.',                         adminOnly:false},
+  {category:'Extras',       item:'Flip flops / Late night snacks',   status:'waiting', notes:'Confirm logistics with caterer / JMB.',                                    adminOnly:false},
+  {category:'Extras',       item:'Honeymoon transfer / logistics',   status:'waiting', notes:'Confirm departure date, airport, flight details.',                         adminOnly:false},
+  // PAYMENTS & ADMIN
+  {category:'Budget',       item:'Damage deposit organised',         status:'waiting', notes:'Check venue deposit amount and due date.',                                  adminOnly:true},
+  {category:'Budget',       item:'All contracts signed',             status:'waiting', notes:'Venue, caterer, florals, photo, video, AV, transport.',                    adminOnly:true},
+  {category:'Budget',       item:'All vendors paid in full',         status:'waiting', notes:'Confirm before wedding day.',                                               adminOnly:true},
+];
+
+
+// ── JMB Setup Template — vendor arrival order from master doc ────────────────
+const SETUP_TEMPLATE = {
+  vendorArrivals:[
+    {id:'sa1',time:'',vendor:'MUAH',         notes:''},
+    {id:'sa2',time:'',vendor:'JMB',          notes:''},
+    {id:'sa3',time:'',vendor:'Caterer',      notes:''},
+    {id:'sa4',time:'',vendor:'Florist',      notes:''},
+    {id:'sa5',time:'',vendor:'Stationery',   notes:''},
+    {id:'sa6',time:'',vendor:'AV',           notes:''},
+    {id:'sa7',time:'',vendor:'DJ',           notes:''},
+    {id:'sa8',time:'',vendor:'Live Music',   notes:''},
+    {id:'sa9',time:'',vendor:'Photo',        notes:''},
+    {id:'sa10',time:'',vendor:'Video',       notes:''},
+    {id:'sa11',time:'',vendor:'Content Creator',notes:''},
+    {id:'sa12',time:'',vendor:'Photo Booth', notes:''},
+    {id:'sa13',time:'',vendor:'Entertainment',notes:''},
+    {id:'sa14',time:'',vendor:'Fireworks',   notes:''},
+  ],
+  areas:[],
+};
+
+
+// ── Budget line items from JMB Master document ───────────────────────────────
+const BUDGET_SECTIONS = [
+  {id:'welcome', label:'Welcome / Rehearsal Dinner', lines:[
+    {key:'venue',     label:'Venue'},
+    {key:'caterer',   label:'Caterer'},
+    {key:'photo',     label:'Photo'},
+    {key:'video',     label:'Video'},
+    {key:'extra1',    label:''},
+    {key:'extra2',    label:''},
+    {key:'extra3',    label:''},
+  ]},
+  {id:'wedding', label:'Wedding Day', lines:[
+    {key:'venue',         label:'Venue'},
+    {key:'caterer',       label:'Caterer'},
+    {key:'rentals',       label:'Rentals'},
+    {key:'floralDecor',   label:'Floral Decor'},
+    {key:'stationery',    label:'Stationery & Signage'},
+    {key:'av',            label:'AV'},
+    {key:'dj',            label:'DJ'},
+    {key:'liveMusic1',    label:'Live Music'},
+    {key:'liveMusic2',    label:'Live Music 2'},
+    {key:'photo',         label:'Photo'},
+    {key:'video',         label:'Video'},
+    {key:'photoBooth',    label:'Photo Booth'},
+    {key:'contentCreator',label:'Content Creator'},
+    {key:'transportGuests',label:'Transport Guests'},
+    {key:'transportParty', label:'Transport Wedding Party'},
+    {key:'welcomeBags',   label:'Welcome Bags / Favours / Gifts'},
+    {key:'extra1',        label:''},
+    {key:'extra2',        label:''},
+    {key:'extra3',        label:''},
+    {key:'extra4',        label:''},
+    {key:'extra5',        label:''},
+  ]},
+  {id:'postWedding', label:'Post Wedding / Day 2', lines:[
+    {key:'venue',     label:'Venue'},
+    {key:'caterer',   label:'Caterer'},
+    {key:'photo',     label:'Photo'},
+    {key:'video',     label:'Video'},
+    {key:'decor',     label:'Decor'},
+    {key:'extra1',    label:''},
+  ]},
+  {id:'other', label:'Other Vendors & Extras', lines:[
+    {key:'weddingPlanner', label:'Wedding Planner'},
+    {key:'extra1',         label:''},
+    {key:'extra2',         label:''},
+  ]},
+];
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const STATUS = {
+  confirmed:    {label:'Confirmed',     color:'#16a34a',bg:'#f0fdf4',border:'#86efac'},
+  'in-progress':{label:'In Progress',  color:'#d97706',bg:'#fffbeb',border:'#fcd34d'},
+  pending:      {label:'Pending',       color:'#dc2626',bg:'#fef2f2',border:'#fca5a5'},
+  waiting:      {label:'Awaiting Quote',color:'#7c3aed',bg:'#f5f3ff',border:'#c4b5fd'},
+};
+
+const VCATS = ['Venue','Welcome','Catering','Florals','Photo','AV','Live Music','DJ','MUAH','Officiant','Transport','Other'];
+const RCATS = ['Venue','Catering','Florals','Photo','MUAH','Transport','Live Music','DJ','AV','Officiant','Stationery','Welcome','Deposit','Other'];
+const STYPES = ['instagram','facebook','website','tiktok'];
+
+const ADMIN_TABS = [
+  {id:'roadmap',  label:'Roadmap'},
+  {id:'vendors',  label:'Vendors'},
+  {id:'setup',    label:'Setup'},
+  {id:'rundown',  label:'Run Down'},
+  {id:'design',   label:'Design'},
+  {id:'moodboard',label:'Mood Board'},
+  {id:'budget',   label:'Budget'},
+  {id:'family',   label:'Family'},
+  {id:'inspection',label:'Inspection'},
+];
+const COUPLE_TABS = ['roadmap','vendors','design','moodboard','rundown'];
+
+const JMB_LIBRARY = [
+  {name:'Xalet del Nin',   cat:'Venue',      social:'https://instagram.com/xaletdelnin',            sType:'instagram',phone:'628.558.678',contact:''},
+  {name:'El Vivero',        cat:'Welcome',    social:'https://instagram.com/vivero_beach_club_sitges',sType:'instagram',phone:'638.405.277',contact:''},
+  {name:'Sensacions',       cat:'Catering',   social:'https://instagram.com/sensacionsbarcelona',    sType:'instagram',phone:'',          contact:'Maria 685803291'},
+  {name:'Flors Amelia',     cat:'Florals',    social:'https://instagram.com/florsamelia',            sType:'instagram',phone:'',          contact:'Guillem 656392656'},
+  {name:'Lara Onac Team',   cat:'Photo',      social:'https://instagram.com/laraonac',               sType:'instagram',phone:'',          contact:''},
+  {name:'Raich',            cat:'AV',         social:'https://instagram.com/raich_av',               sType:'instagram',phone:'',          contact:'Anna 692021442'},
+  {name:'Teresa Snowball',  cat:'MUAH',       social:'https://instagram.com/teresasnowball_co',      sType:'instagram',phone:'627.638.763',contact:''},
+  {name:'Ludo',             cat:'Officiant',  social:'https://instagram.com/ludotalks',              sType:'instagram',phone:'678 540 799',contact:''},
+  {name:'Tu Musica Events', cat:'Live Music', social:'https://instagram.com/tumusicaevents',         sType:'instagram',phone:'660192558', contact:''},
+  {name:'Emilio',           cat:'Live Music', social:'',                                              sType:'instagram',phone:'722331695', contact:''},
+  {name:'Suit & Music',     cat:'DJ',         social:'',                                              sType:'instagram',phone:'',          contact:'Ivan'},
+  {name:'Dotor',            cat:'Transport',  social:'',                                              sType:'instagram',phone:'938.180.611',contact:''},
+  {name:'Driverlux',        cat:'Transport',  social:'',                                              sType:'instagram',phone:'',          contact:''},
+];
+
+const RUNDOWN_TEMPLATE = [
+  {
+    label:'DAY 1 · Welcome Event / Rehearsal',
+    items:[
+      {time:'',who:'',           action:'── ARRIVAL @ WELCOME EVENT / REHEARSAL ──'},
+      {time:'',who:'',           action:'WELCOME EVENT / REHEARSAL @'},
+      {time:'',who:'Bride + Girls', action:'START GETTING READY'},
+    ]
+  },
+  {
+    label:'DAY 2 · Wedding Day',
+    items:[
+      {time:'',who:'',              action:'── TEAM ONE'S MORNING ──'},
+      {time:'',who:'Bride + Girls', action:'START GETTING READY'},
+      {time:'',who:'Bride',         action:'GETS DRESSED'},
+      {time:'',who:'',              action:'── TEAM TWO'S MORNING ──'},
+      {time:'',who:'Groom + Boys',  action:'START GETTING READY'},
+      {time:'',who:'',              action:'── GUESTS TRANSPORT TO VENUE ──'},
+      {time:'',who:'Bus',           action:'PRESENTATION → DEPARTURE'},
+      {time:'',who:'',              action:'── WELCOME ──'},
+      {time:'',who:'Guests',        action:'ARRIVE AT VENUE'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO CEREMONY + help with reserved seats'},
+      {time:'',who:'',              action:'── CEREMONY ──'},
+      {time:'',who:'Song 1',        action:'ENTRANCE TO CEREMONY'},
+      {time:'',who:'Song 2',        action:''},
+      {time:'',who:'Song 3',        action:''},
+      {time:'',who:'',              action:'EXCHANGE VOWS'},
+      {time:'',who:'',              action:'EXCHANGE RINGS'},
+      {time:'',who:'Song',          action:'RECESSION · PETAL TOSS'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO COCKTAIL PARTY'},
+      {time:'',who:'',              action:'── COCKTAIL PARTY ──'},
+      {time:'',who:'All',           action:'GROUP PHOTOS'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO RECEPTION'},
+      {time:'',who:'',              action:'── RECEPTION ──'},
+      {time:'',who:'Guests',        action:'ENTER DINNER HALL · TAKE SEATS'},
+      {time:'',who:'',              action:'ENTRANCE TO DINNER'},
+      {time:'',who:'',              action:'SPEECH 1'},
+      {time:'',who:'Caterer',       action:'SERVES STARTER + MAIN'},
+      {time:'',who:'',              action:'SPEECH 2'},
+      {time:'',who:'Caterer',       action:'SERVES DESSERT / CAKE'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO DANCE'},
+      {time:'',who:'',              action:'── DANCE ──'},
+      {time:'',who:'All',           action:'DANCE STARTS'},
+      {time:'',who:'',              action:'MIDNIGHT SNACKS'},
+      {time:'',who:'',              action:'FIRST BUS BACK'},
+      {time:'',who:'All',           action:'END OF PARTY'},
+      {time:'',who:'',              action:'BUS BACK'},
+    ]
+  },
+  {
+    label:'DAY 3 · Day 2 / Post Wedding',
+    items:[
+      {time:'',who:'',action:'DAY 2'},
+    ]
+  },
+];
+
+
+const DESIGN_ZONES = [
+  {id:'welcome',  label:'Welcome',   icon:'🌿'},
+  {id:'ceremony', label:'Ceremony',  icon:'💐'},
+  {id:'cocktail', label:'Cocktail',  icon:'🥂'},
+  {id:'dinner',   label:'Dinner',    icon:'🕯️'},
+  {id:'dance',    label:'Dance',     icon:'✨'},
+  {id:'day2',     label:'Day 2',     icon:'🌊'},
+];
+// Fields per zone — mapped exactly from JMB Master Planner document
+const ZONE_FIELDS = {
+  welcome:[
+    {key:'drinksStation', label:'Drinks Station'},
+    {key:'welcomeSign',   label:'Welcome Sign'},
+    {key:'fans',          label:'Fans'},
+    {key:'parasols',      label:'Parasols'},
+    {key:'cardBox',       label:'Card Box'},
+    {key:'decor',         label:'Other Decor'},
+  ],
+  ceremony:[
+    {key:'backdrop',       label:'Backdrop'},
+    {key:'aisle',          label:'Aisle'},
+    {key:'entrance',       label:'Entrance to Ceremony'},
+    {key:'petals',         label:'Petals'},
+    {key:'chairs',         label:'Chairs'},
+    {key:'vowBooklets',    label:'Vow Booklets'},
+    {key:'ceremonyBooklets',label:'Ceremony Booklets'},
+    {key:'ringBox',        label:'Ring Box'},
+  ],
+  cocktail:[
+    {key:'cocktailTables', label:'Cocktail Tables'},
+    {key:'tablecloths',    label:'Table Cloths'},
+    {key:'chairs',         label:'Chairs'},
+    {key:'menuCards',      label:'Menu Cards'},
+    {key:'buffets',        label:'Buffets'},
+    {key:'buffetSignage',  label:'Buffet Signage'},
+    {key:'bars',           label:'Bars'},
+    {key:'barSignage',     label:'Bar Signage'},
+    {key:'selfieMirror',   label:'Selfie Mirror / Photo Booth / Photo Call'},
+    {key:'lighting',       label:'Lighting'},
+    {key:'toiletryBaskets',label:'Toiletry Baskets'},
+  ],
+  dinner:[
+    {key:'topTable',       label:'Top Table (Round / Long) — Pax?'},
+    {key:'topTableDecor',  label:'Top Table Decor'},
+    {key:'tables',         label:'Tables (Round / Long)'},
+    {key:'tablesDecor',    label:'Tables Decor'},
+    {key:'tablecloth',     label:'Table Cloth'},
+    {key:'seatingPlan',    label:'Seating Plan'},
+    {key:'menuCards',      label:'Menu Cards'},
+    {key:'namePlacement',  label:'Name Placement'},
+    {key:'tableNumbers',   label:'Table Numbers / Names'},
+    {key:'floralsTable',   label:'Florals Tables'},
+    {key:'candles',        label:'Candles'},
+    {key:'floralsCeiling', label:'Florals Ceiling'},
+    {key:'lighting',       label:'Lighting'},
+    {key:'chandeliers',    label:'Chandeliers'},
+    {key:'garlands',       label:'Garlands'},
+  ],
+  dance:[
+    {key:'djBooth',        label:'DJ Booth'},
+    {key:'lights',         label:'Lights'},
+    {key:'smokeMachine',   label:'Smoke Machine'},
+    {key:'decor',          label:'Decor'},
+    {key:'hangingDecor',   label:'Hanging Decor'},
+    {key:'barDecor',       label:'Bar Decor'},
+    {key:'signage',        label:'Signage'},
+    {key:'cocktails',      label:'Cocktails'},
+    {key:'premiumLicors',  label:'Premium Licors'},
+    {key:'flipFlops',      label:'Flip Flops'},
+  ],
+  day2:[
+    {key:'venue',          label:'Venue'},
+    {key:'caterer',        label:'Caterer'},
+    {key:'decor',          label:'Decor'},
+    {key:'photo',          label:'Photo'},
+    {key:'video',          label:'Video'},
+    {key:'transport',      label:'Transport'},
+  ],
+};
+
+const ROLE_BADGE = {
+  owner:  {label:'Owner',  bg:'#fdf4ff',color:'#9333ea',border:'#e9d5ff'},
+  planner:{label:'Planner',bg:'#f0fdf4',color:'#16a34a',border:'#86efac'},
+};
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+const I = {width:'100%',padding:'9px 12px',border:'1.5px solid #E5E5E0',borderRadius:6,fontSize:13,fontFamily:'inherit',boxSizing:'border-box',outline:'none',color:'#1C1C1C',background:'#fff'};
+const L = {display:'block',fontSize:10,fontWeight:600,color:'#8A8A82',marginBottom:5,letterSpacing:'0.1em',textTransform:'uppercase'};
+const BG = {background:'#1C1C1C',color:'#fff',border:'none',borderRadius:6,padding:'9px 20px',cursor:'pointer',fontWeight:500,fontSize:12,fontFamily:'inherit',letterSpacing:'0.08em'};
+const BO = {background:'none',color:'#1C1C1C',border:'1.5px solid #DEDED8',borderRadius:6,padding:'8px 18px',cursor:'pointer',fontSize:12,fontFamily:'inherit'};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function Lbl({t}){ return <label style={L}>{t}</label>; }
+
+function Inp({val,onChange,placeholder,type='text',style={}}){
+  return <input type={type} style={{...I,...style}} value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder||''}/>;
+}
+
+function Btn({onClick,children,outline,style={}}){
+  return <button onClick={onClick} style={{...(outline?BO:BG),...style}}>{children}</button>;
+}
+
+function Modal({title,onClose,children,wide}){
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:wide?720:520,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+        <div style={{padding:'22px 24px 0',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'#fff',borderRadius:'12px 12px 0 0',zIndex:1,borderBottom:'1px solid #F0F0EC',paddingBottom:14}}>
+          <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:19,fontWeight:400,color:'#1C1C1C'}}>{title}</span>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#aaa',fontSize:20,lineHeight:1}}>✕</button>
+        </div>
+        <div style={{padding:'20px 24px 24px'}}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Avatar({name,size=32}){
+  const letters = name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const hue = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % 360;
+  return <div style={{width:size,height:size,borderRadius:'50%',background:'hsl('+hue+',25%,45%)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.36,fontWeight:600,color:'#fff',flexShrink:0}}>{letters}</div>;
+}
+
+function SocialBtn({social,sType}){
+  if(!social) return null;
+  const icons = {instagram:'📸',facebook:'👍',website:'🌐',tiktok:'🎵'};
+  const url = social.startsWith('http') ? social : 'https://instagram.com/'+social.replace('@','');
+  return (
+    <a href={url} target="_blank" rel="noreferrer" style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:12,color:'#6B6B64',textDecoration:'none',background:'#F5F5F2',padding:'3px 10px',borderRadius:16,border:'1px solid #E5E5E0'}}>
+      <span>{icons[sType]||'🔗'}</span>
+      <span style={{textTransform:'capitalize'}}>{sType}</span>
+    </a>
+  );
+}
+
+function Field({label,children,mt=0}){
+  return <div style={{marginTop:mt}}><Lbl t={label}/>{children}</div>;
+}
+
+// ── App root ─────────────────────────────────────────────────────────────────
+function App(){
+  const [loading,setLoading] = useState(true);
+  const [admins,setAdmins]   = useState([]);
+  const [clients,setClients] = useState([]);
+  const [session,setSession] = useState(null);
+
+  useEffect(()=>{
+    let a = db.get('admins'); if(!a||!a.length){a=DEF_ADMINS;db.set('admins',a);}
+    let c = db.get('clients'); if(!c||!c.length){c=[DEF_CLIENT];db.set('clients',c);}
+    setAdmins(a); setClients(c);
+    const saved = db.get('session');
+    if(saved){
+      if(saved.role==='owner'||saved.role==='planner'){
+        const u = a.find(x=>x.id===saved.userId&&x.password===saved.userPass);
+        if(u) setSession({role:u.role,user:u,clientId:null});
+      } else if(saved.role==='couple'){
+        const cl = c.find(x=>x.id===saved.clientId&&x.coupleUser===saved.coupleUser&&x.couplePass===saved.couplePass);
+        if(cl) setSession({role:'couple',client:cl});
+      }
+    }
+    setLoading(false);
+
+    // Real-time sync across all devices
+    db.listen("admins",  val => { if(val) setAdmins(val); });
+    db.listen("clients", val => { if(val) setClients(val); });
+  },[]);
+
+  const saveAdmins  = async a => { setAdmins(a);  await db.set('admins',a);  };
+  const saveClients = async c => { setClients(c); await db.set('clients',c); };
+
+  const updateClient = async updated => {
+    const arr = clients.map(c=>c.id===updated.id?updated:c);
+    await saveClients(arr);
+    if(session&&session.role==='couple'&&session.client.id===updated.id)
+      setSession(s=>({...s,client:updated}));
+  };
+
+  const login = (sess,remember) => {
+    setSession(sess);
+    try {
+      if(remember) localStorage.setItem('jmb_session', JSON.stringify(sess));
+      else localStorage.removeItem('jmb_session');
+    } catch(e){}
+  };
+  const logout = () => {
+    setSession(null);
+    try { localStorage.removeItem('jmb_session'); } catch(e){}
+  };
+
+  if(loading) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff'}}>
+      <div style={{textAlign:'center'}}>
+        <div style={{fontFamily:"'Great Vibes',cursive",fontSize:44,color:'#1C1C1C'}}>Just Married</div>
+        <div style={{fontSize:10,color:'#aaa',letterSpacing:'0.3em',textTransform:'uppercase',marginTop:6}}>Barcelona</div>
+      </div>
+    </div>
+  );
+
+  if(!session) return <Login admins={admins} clients={clients} onLogin={login}/>;
+
+  const currentClients = clients;
+  const myClients = session.role==='owner' ? currentClients :
+    session.role==='planner' ? currentClients.filter(c=>c.leadId===session.user.id||(c.collaboratorIds||[]).includes(session.user.id)) :
+    [];
+
+  if(session.role==='couple'){
+    return <CoupleApp session={session} onLogout={logout} onUpdate={updateClient}/>;
+  }
+
+  return <AdminApp session={session} admins={admins} myClients={myClients} allClients={currentClients} onLogout={logout} onSaveAdmins={saveAdmins} onSaveClients={saveClients} onUpdate={updateClient}/>;
+}
+
+// ── Login ────────────────────────────────────────────────────────────────────
+function Login({admins,clients,onLogin}){
+  const [tab,setTab]         = useState('couple');
+  const [user,setUser]       = useState('');
+  const [pass,setPass]       = useState('');
+  const [remember,setRemember] = useState(false);
+  const [err,setErr]         = useState('');
+
+  const go = () => {
+    setErr('');
+    if(tab==='team'){
+      const u = admins.find(a=>a.username===user.trim().toLowerCase()&&a.password===pass);
+      if(!u){ setErr('Invalid username or password.'); return; }
+      onLogin({role:u.role,user:u,userId:u.id,userPass:u.password},remember);
+    } else {
+      const c = clients.find(c=>c.coupleUser===user.trim().toLowerCase()&&c.couplePass===pass);
+      if(!c){ setErr('Incorrect credentials.'); return; }
+      onLogin({role:'couple',client:c,clientId:c.id,coupleUser:c.coupleUser,couplePass:c.couplePass},remember);
+    }
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:'#F8F8F6',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div style={{width:'100%',maxWidth:400}}>
+        <div style={{textAlign:'center',marginBottom:32}}>
+          <div style={{fontFamily:"'Great Vibes',cursive",fontSize:46,color:'#1C1C1C',lineHeight:1.1}}>Just Married</div>
+          <div style={{fontSize:10,color:'#aaa',letterSpacing:'0.3em',textTransform:'uppercase',marginTop:8}}>Barcelona · Wedding Planning</div>
+        </div>
+        <div style={{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',overflow:'hidden',boxShadow:'0 4px 30px rgba(0,0,0,0.08)'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',borderBottom:'1px solid #E5E5E0'}}>
+            {[['couple','Our Wedding 💍'],['team','Team Login']].map(([id,label])=>(
+              <button key={id} onClick={()=>{setTab(id);setErr('');setUser('');setPass('');setRemember(false);}}
+                style={{padding:'14px',border:'none',background:tab===id?'#fff':'#F8F8F6',color:tab===id?'#1C1C1C':'#8A8A82',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:tab===id?600:400,borderBottom:tab===id?'2px solid #1C1C1C':'2px solid transparent',letterSpacing:'0.04em'}}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div style={{padding:24}}>
+            <div style={{marginBottom:14}}>
+              <Lbl t="Username"/>
+              <Inp val={user} onChange={setUser} placeholder={tab==='team'?'anna · judit · admin':'couple username'}/>
+            </div>
+            <div style={{marginBottom:16}}>
+              <Lbl t="Password"/>
+              <input type="password" style={{...I}} value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()}/>
+            </div>
+            <label style={{display:'flex',alignItems:'center',gap:10,marginBottom:18,cursor:'pointer',userSelect:'none'}}>
+              <div onClick={()=>setRemember(r=>!r)} style={{width:38,height:20,borderRadius:10,background:remember?'#1C1C1C':'#E5E5E0',position:'relative',transition:'background 0.2s',cursor:'pointer',flexShrink:0}}>
+                <div style={{position:'absolute',top:2,left:remember?20:2,width:16,height:16,borderRadius:'50%',background:'#fff',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
+              </div>
+              <span style={{fontSize:12,color:'#8A8A82'}}>Remember me</span>
+            </label>
+            {err&&<div style={{background:'#fef2f2',border:'1px solid #fca5a5',borderRadius:6,padding:'8px 12px',color:'#dc2626',fontSize:12,marginBottom:14}}>{err}</div>}
+            <Btn onClick={go} style={{width:'100%',padding:'12px',fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase'}}>
+              {tab==='couple'?'Access My Wedding →':'Sign In →'}
+            </Btn>
+          </div>
+        </div>
+        <div style={{marginTop:16,background:'#F8F8F6',borderRadius:8,padding:'12px 16px',border:'1px solid #E5E5E0'}}>
+          <div style={{fontSize:10,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Demo</div>
+          {tab==='couple'
+            ?<div style={{fontSize:12,color:'#6A6A64'}}>caitlingus / xalet2025</div>
+            :<div style={{fontSize:12,color:'#6A6A64',lineHeight:1.9}}>admin / justmarried (Owner)<br/>anna / jmb2025 · judit / jmb2025 (Planners)</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Header component ─────────────────────────────────────────────────────────
+function Header({left,right,border=true}){
+  return (
+    <header style={{background:'#fff',borderBottom:border?'1px solid #E5E5E0':'none',padding:'0 clamp(16px,4vw,36px)',display:'flex',alignItems:'center',justifyContent:'space-between',height:60,position:'sticky',top:0,zIndex:100}}>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>{left}</div>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>{right}</div>
+    </header>
+  );
+}
+
+function Logo({size=24}){
+  return <span style={{fontFamily:"'Great Vibes',cursive",fontSize:size,color:'#1C1C1C',lineHeight:1}}>Just Married</span>;
+}
+
+// ── Admin App ────────────────────────────────────────────────────────────────
+function AdminApp({session,admins,myClients,allClients,onLogout,onSaveAdmins,onSaveClients,onUpdate}){
+  const [view,setView]       = useState('dashboard');
+  const [active,setActive]   = useState(null);
+  const [ctab,setCtab]       = useState('roadmap');
+  const [showNew,setShowNew] = useState(false);
+  const isOwner = session.role==='owner';
+
+  if(view==='client'&&active){
+    const fresh = allClients.find(c=>c.id===active)||active;
+    return <ClientView client={fresh} admins={admins} isAdmin tab={ctab} setTab={setCtab} onBack={()=>{setView('dashboard');setActive(null);}} onUpdate={onUpdate} adminName={session.user.name}/>;
+  }
+  if(view==='team'){
+    return <TeamView admins={admins} clients={allClients} session={session} onSaveAdmins={onSaveAdmins} onSaveClients={onSaveClients} onBack={()=>setView('dashboard')}/>;
+  }
+
+  const stats = [
+    ['Total Clients', allClients.length],
+    ['Weddings 2025', allClients.filter(c=>c.date&&c.date.startsWith('2025')).length],
+    ['Total Revenue', '€'+allClients.reduce((a,c)=>a+(c.budget||0),0).toLocaleString('es-ES',{maximumFractionDigits:0})],
+    ['Pending', '€'+allClients.reduce((a,c)=>a+Math.max(0,(c.budget||0)-(c.budgetPaid||0)),0).toLocaleString('es-ES',{maximumFractionDigits:0})],
+  ];
+
+  return (
+    <div style={{minHeight:'100vh',background:'#FAFAF8'}}>
+      <Header
+        left={<><Logo/><span style={{width:1,height:20,background:'#E5E5E0'}}/><span style={{fontSize:11,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase'}}>{isOwner?'Dashboard':'My Weddings'}</span></>}
+        right={<>
+          <div style={{display:'flex',alignItems:'center',gap:8}}><Avatar name={session.user.name} size={28}/><span className="hide-sm" style={{fontSize:12,color:'#6A6A64'}}>{session.user.name}</span></div>
+          {isOwner&&<Btn onClick={()=>setView('team')} outline style={{fontSize:11,padding:'6px 14px'}}>Team</Btn>}
+          <button onClick={onLogout} style={{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:12}}>Log out</button>
+        </>}
+      />
+      <div style={{maxWidth:1100,margin:'0 auto',padding:'clamp(20px,4vw,36px) clamp(16px,3vw,24px)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:28,flexWrap:'wrap',gap:12}}>
+          <div>
+            <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(24px,4vw,32px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 4px',letterSpacing:'0.04em'}}>{isOwner?'All Weddings':'My Weddings'}</h1>
+            <p style={{color:'#8A8A82',margin:0,fontSize:13}}>{myClients.length} client{myClients.length!==1?'s':''}</p>
+          </div>
+          {isOwner&&<Btn onClick={()=>setShowNew(true)}>＋ New Client</Btn>}
+        </div>
+
+        {isOwner&&(
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:14,marginBottom:28}}>
+            {stats.map(([l,v])=>(
+              <div key={l} style={{background:'#fff',borderRadius:10,padding:'18px 20px',border:'1px solid #E5E5E0'}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,3vw,26px)',fontWeight:400,color:'#1C1C1C'}}>{v}</div>
+                <div style={{fontSize:11,color:'#8A8A82',marginTop:3,letterSpacing:'0.04em'}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {myClients.length===0?(
+          <div style={{textAlign:'center',padding:'60px 20px',background:'#fff',borderRadius:12,border:'1px solid #E5E5E0'}}>
+            <div style={{fontSize:36,marginBottom:12}}>💍</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#aaa'}}>No weddings assigned yet</div>
+          </div>
+        ):(
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(290px,1fr))',gap:18}}>
+            {myClients.map(c=>{
+              const lead = admins.find(a=>a.id===c.leadId);
+              const collabs = (c.collaboratorIds||[]).map(id=>admins.find(a=>a.id===id)).filter(Boolean);
+              const tv = (c.vendors||[]).length;
+              const cv = (c.vendors||[]).filter(v=>v.confirmed).length;
+              const pct = tv>0?Math.round((cv/tv)*100):0;
+              const days = Math.ceil((new Date(c.date)-new Date())/86400000);
+              return (
+                <div key={c.id} onClick={()=>{setActive(c.id);setCtab('roadmap');setView('client');}}
+                  style={{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',overflow:'hidden',cursor:'pointer',transition:'box-shadow 0.2s'}}
+                  onMouseEnter={e=>e.currentTarget.style.boxShadow='0 8px 28px rgba(0,0,0,0.1)'}
+                  onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
+                  <div style={{background:'#1C1C1C',padding:'18px 20px 14px',position:'relative'}}>
+                    <div style={{fontFamily:"'Great Vibes',cursive",fontSize:24,color:'#fff',lineHeight:1.2}}>{c.bride} & {c.groom}</div>
+                    <div style={{color:'#888',fontSize:12,marginTop:3}}>{c.venue}</div>
+                    <div style={{position:'absolute',top:14,right:14,background:'rgba(255,255,255,0.1)',borderRadius:16,padding:'3px 10px',fontSize:11,color:'#ccc'}}>
+                      {days>0?days+'d':days===0?'Today':'Past'}
+                    </div>
+                  </div>
+                  <div style={{padding:'14px 20px 18px'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',color:'#8A8A82',fontSize:12,marginBottom:12}}>
+                      <span>{c.date?new Date(c.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}</span>
+                      <span>{c.guests&&c.guests.adults?c.guests.adults+' guests':''}</span>
+                    </div>
+                    {(lead||collabs.length>0)&&(
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,padding:'6px 10px',background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0',flexWrap:'wrap'}}>
+                        {lead&&<><Avatar name={lead.name} size={20}/><span style={{fontSize:11,color:'#555',fontWeight:500}}>{lead.name}</span><span style={{fontSize:10,color:'#B5977A',background:'rgba(181,151,122,0.1)',padding:'1px 6px',borderRadius:8}}>Lead</span></>}
+                        {collabs.map(co=><Avatar key={co.id} name={co.name} size={18}/>)}
+                      </div>
+                    )}
+                    {tv>0&&(<>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'#8A8A82',marginBottom:5}}>
+                        <span>Vendors confirmed</span>
+                        <span style={{color:pct>=100?'#16a34a':pct>=50?'#d97706':'#dc2626',fontWeight:600}}>{cv}/{tv}</span>
+                      </div>
+                      <div style={{background:'#F0F0EC',borderRadius:4,height:5}}>
+                        <div style={{background:pct>=100?'#16a34a':'#1C1C1C',height:5,borderRadius:4,width:pct+'%',transition:'width 0.5s'}}/>
+                      </div>
+                    </>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {showNew&&<NewClientModal admins={admins} onClose={()=>setShowNew(false)} onSave={nc=>{onSaveClients([...allClients,nc]);setShowNew(false);}}/>}
+    </div>
+  );
+}
+
+// ── Team View ────────────────────────────────────────────────────────────────
+function TeamView({admins,clients,session,onSaveAdmins,onSaveClients,onBack}){
+  const [showAdd,setShowAdd]   = useState(false);
+  const [editAcc,setEditAcc]   = useState(null);
+  const [mf,setMf]             = useState({name:'',username:'',password:'',role:'planner'});
+
+  return (
+    <div style={{minHeight:'100vh',background:'#FAFAF8'}}>
+      <Header
+        left={<><button onClick={onBack} style={{background:'none',border:'none',color:'#1C1C1C',cursor:'pointer',fontSize:13}}>← Back</button><span style={{width:1,height:20,background:'#E5E5E0'}}/><Logo size={22}/></>}
+        right={<span style={{fontSize:12,color:'#8A8A82'}}>Team & Access</span>}
+      />
+      <div style={{maxWidth:880,margin:'0 auto',padding:'32px clamp(16px,3vw,24px)'}}>
+
+        <div style={{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',padding:24,marginBottom:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18,flexWrap:'wrap',gap:10}}>
+            <div>
+              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#1C1C1C',margin:'0 0 3px'}}>Team Members</h2>
+              <p style={{color:'#8A8A82',fontSize:12,margin:0}}>Owners see all weddings. Planners see assigned only.</p>
+            </div>
+            <Btn onClick={()=>setShowAdd(true)}>＋ Add Member</Btn>
+          </div>
+          {admins.map(a=>{
+            const rb = ROLE_BADGE[a.role]||ROLE_BADGE.planner;
+            const count = clients.filter(c=>c.leadId===a.id||(c.collaboratorIds||[]).includes(a.id)).length;
+            return (
+              <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,background:'#F8F8F6',borderRadius:8,padding:'12px 16px',border:'1px solid #E5E5E0',marginBottom:8,flexWrap:'wrap'}}>
+                <Avatar name={a.name} size={36}/>
+                <div style={{flex:1,minWidth:120}}>
+                  <div style={{fontWeight:600,fontSize:14,color:'#1C1C1C'}}>{a.name}</div>
+                  <div style={{fontSize:11,color:'#8A8A82',marginTop:2}}>@{a.username} · pw: {a.password} · {count} wedding{count!==1?'s':''}</div>
+                </div>
+                <span style={{fontSize:10,fontWeight:600,padding:'3px 10px',borderRadius:10,background:rb.bg,color:rb.color,border:'1px solid '+rb.border}}>{rb.label}</span>
+                {admins.length>1&&a.id!==session.user.id&&(
+                  <button onClick={()=>onSaveAdmins(admins.filter(x=>x.id!==a.id))} style={{background:'none',border:'none',cursor:'pointer',color:'#fca5a5',fontSize:16}}>✕</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',padding:24}}>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#1C1C1C',margin:'0 0 18px'}}>Wedding Assignments & Access</h2>
+          {clients.map(c=>{
+            const lead = admins.find(a=>a.id===c.leadId);
+            const collabs = (c.collaboratorIds||[]).map(id=>admins.find(a=>a.id===id)).filter(Boolean);
+            return (
+              <div key={c.id} style={{background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0',padding:'14px 16px',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:10}}>
+                <div>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C'}}>{c.bride} & {c.groom}</div>
+                  <div style={{fontSize:12,color:'#8A8A82',marginTop:2}}>{c.venue} · {c.date?new Date(c.date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):''}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8,flexWrap:'wrap'}}>
+                    {lead?<><Avatar name={lead.name} size={20}/><span style={{fontSize:12,color:'#555'}}>{lead.name}</span><span style={{fontSize:10,color:'#B5977A',background:'rgba(181,151,122,0.1)',padding:'1px 6px',borderRadius:8}}>Lead</span></> :<span style={{fontSize:11,color:'#dc2626',background:'#fef2f2',padding:'2px 8px',borderRadius:8}}>⚠ No lead</span>}
+                    {collabs.map(co=><Avatar key={co.id} name={co.name} size={18}/>)}
+                  </div>
+                  <div style={{fontSize:11,color:'#aaa',marginTop:4}}>Login: {c.coupleUser} / {c.couplePass} · Tabs: {(c.visibleTabs||[]).join(', ')}</div>
+                </div>
+                <Btn onClick={()=>setEditAcc({...c})} outline style={{fontSize:11,padding:'6px 12px'}}>Manage</Btn>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {showAdd&&(
+        <Modal title="Add Team Member" onClose={()=>setShowAdd(false)}>
+          <Field label="Full Name"><Inp val={mf.name} onChange={v=>setMf(p=>({...p,name:v}))}/></Field>
+          <Field label="Username" mt={12}><Inp val={mf.username} onChange={v=>setMf(p=>({...p,username:v.toLowerCase()}))}/></Field>
+          <Field label="Password" mt={12}><Inp val={mf.password} onChange={v=>setMf(p=>({...p,password:v}))}/></Field>
+          <div style={{marginTop:14}}>
+            <Lbl t="Role"/>
+            <div style={{display:'flex',gap:10}}>
+              {['planner','owner'].map(r=>(
+                <button key={r} onClick={()=>setMf(p=>({...p,role:r}))} style={{flex:1,padding:'10px',borderRadius:8,border:'1.5px solid '+(mf.role===r?'#1C1C1C':'#E5E5E0'),background:mf.role===r?'#1C1C1C':'#fff',color:mf.role===r?'#fff':'#1C1C1C',cursor:'pointer',fontFamily:'inherit',fontSize:12}}>
+                  <div style={{fontWeight:600}}>{r==='owner'?'Owner':'Planner'}</div>
+                  <div style={{fontSize:10,opacity:0.7,marginTop:2}}>{r==='owner'?'All weddings':'Assigned only'}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10,marginTop:20,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>setShowAdd(false)} outline>Cancel</Btn>
+            <Btn onClick={()=>{if(!mf.name||!mf.username||!mf.password)return;onSaveAdmins([...admins,{id:'a'+Date.now(),...mf}]);setShowAdd(false);setMf({name:'',username:'',password:'',role:'planner'});}}>Add</Btn>
+          </div>
+        </Modal>
+      )}
+      {editAcc&&<AccessModal client={editAcc} admins={admins} onClose={()=>setEditAcc(null)} onSave={u=>{onSaveClients(clients.map(c=>c.id===u.id?u:c));setEditAcc(null);}}/>}
+    </div>
+  );
+}
+
+function AccessModal({client,admins,onClose,onSave}){
+  const [c,setC] = useState({...client,collaboratorIds:client.collaboratorIds||[]});
+  const toggleCollab = id => { const has=c.collaboratorIds.includes(id); setC(p=>({...p,collaboratorIds:has?p.collaboratorIds.filter(x=>x!==id):[...p.collaboratorIds,id]})); };
+  const toggleTab = id => { const has=(c.visibleTabs||[]).includes(id); setC(p=>({...p,visibleTabs:has?p.visibleTabs.filter(t=>t!==id):[...(p.visibleTabs||[]),id]})); };
+  const toggleHide = id => { const h=c.hiddenRoadmapIds||[]; setC(p=>({...p,hiddenRoadmapIds:h.includes(id)?h.filter(x=>x!==id):[...h,id]})); };
+  return (
+    <Modal title={client.bride+' & '+client.groom+' — Access'} onClose={onClose} wide>
+      <div style={{background:'#F8F8F6',borderRadius:8,padding:16,marginBottom:16,border:'1px solid #E5E5E0'}}>
+        <Lbl t="Team Assignment"/>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:'#6A6A64',marginBottom:6,fontWeight:500}}>Lead Planner</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button onClick={()=>setC(p=>({...p,leadId:null}))} style={{padding:'5px 12px',borderRadius:16,border:'1.5px solid '+(c.leadId?'#E5E5E0':'#1C1C1C'),background:c.leadId?'#fff':'#1C1C1C',color:c.leadId?'#8A8A82':'#fff',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>None</button>
+            {admins.map(a=>(
+              <button key={a.id} onClick={()=>setC(p=>({...p,leadId:a.id,collaboratorIds:(p.collaboratorIds||[]).filter(x=>x!==a.id)}))}
+                style={{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:16,border:'1.5px solid '+(c.leadId===a.id?'#1C1C1C':'#E5E5E0'),background:c.leadId===a.id?'#1C1C1C':'#fff',color:c.leadId===a.id?'#fff':'#555',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+                <Avatar name={a.name} size={16}/>{a.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:'#6A6A64',marginBottom:6,fontWeight:500}}>Collaborators</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {admins.filter(a=>a.id!==c.leadId).map(a=>{
+              const active=c.collaboratorIds.includes(a.id);
+              return <button key={a.id} onClick={()=>toggleCollab(a.id)} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:16,border:'1.5px solid '+(active?'#7c3aed':'#E5E5E0'),background:active?'#f5f3ff':'#fff',color:active?'#7c3aed':'#8A8A82',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}><Avatar name={a.name} size={16}/>{a.name}{active?' ✓':''}</button>;
+            })}
+          </div>
+        </div>
+      </div>
+      <div style={{background:'#F8F8F6',borderRadius:8,padding:16,marginBottom:16,border:'1px solid #E5E5E0'}}>
+        <Lbl t="Couple Login"/>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <Field label="Username"><Inp val={c.coupleUser||''} onChange={v=>setC(p=>({...p,coupleUser:v.toLowerCase()}))}/></Field>
+          <Field label="Password"><Inp val={c.couplePass||''} onChange={v=>setC(p=>({...p,couplePass:v}))}/></Field>
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <Lbl t="Visible Tabs for Couple"/>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
+          {COUPLE_TABS.map(id=>{const t=ADMIN_TABS.find(x=>x.id===id);const active=(c.visibleTabs||[]).includes(id);return <button key={id} onClick={()=>toggleTab(id)} style={{padding:'5px 14px',borderRadius:16,border:'1.5px solid '+(active?'#1C1C1C':'#E5E5E0'),background:active?'#1C1C1C':'#fff',color:active?'#fff':'#8A8A82',fontSize:11,cursor:'pointer',fontFamily:'inherit',fontWeight:active?600:400}}>{t&&t.label}</button>;})}
+        </div>
+      </div>
+      <div>
+        <Lbl t="Roadmap Visibility"/>
+        <div style={{maxHeight:200,overflowY:'auto',display:'flex',flexDirection:'column',gap:5,marginTop:6}}>
+          {(client.roadmap||[]).map(r=>{
+            const ao=r.adminOnly;const hidden=(c.hiddenRoadmapIds||[]).includes(r.id)||ao;
+            return (
+              <div key={r.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 12px',background:hidden?'#fff8f8':'#f8fdf8',borderRadius:6,border:'1px solid '+(hidden?'#fca5a5':'#d1fae5')}}>
+                <div><span style={{fontSize:12,color:'#1C1C1C'}}>{r.item}</span><span style={{fontSize:10,color:'#aaa',marginLeft:8}}>{r.category}</span></div>
+                {!ao?<button onClick={()=>toggleHide(r.id)} style={{fontSize:10,fontWeight:600,padding:'2px 10px',borderRadius:8,border:'none',cursor:'pointer',background:hidden?'#fef2f2':'#f0fdf4',color:hidden?'#dc2626':'#16a34a'}}>{hidden?'Hidden':'Visible'}</button>:<span style={{fontSize:10,color:'#bbb'}}>Always hidden</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,marginTop:20,justifyContent:'flex-end'}}>
+        <Btn onClick={onClose} outline>Cancel</Btn>
+        <Btn onClick={()=>onSave(c)}>Save</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Couple App ───────────────────────────────────────────────────────────────
+function CoupleApp({session,onLogout,onUpdate}){
+  const client = session.client;
+  const visibleTabs = ADMIN_TABS.filter(t=>(client.visibleTabs||[]).includes(t.id));
+  const [tab,setTab] = useState(visibleTabs[0]&&visibleTabs[0].id||'roadmap');
+  const days = Math.ceil((new Date(client.date)-new Date())/86400000);
+  return (
+    <div style={{minHeight:'100vh',background:'#FAFAF8'}}>
+      <Header
+        left={<><Logo/><span style={{width:1,height:20,background:'#E5E5E0'}}/><span className="hide-sm" style={{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontStyle:'italic',color:'#1C1C1C'}}>{client.bride} & {client.groom}</span></>}
+        right={<><div style={{textAlign:'right'}}><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:400,color:'#1C1C1C',lineHeight:1}}>{days>0?days:0}</div><div style={{fontSize:9,color:'#8A8A82',letterSpacing:'0.1em',textTransform:'uppercase'}}>days</div></div><button onClick={onLogout} style={{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:12}}>Log out</button></>}
+      />
+      <TabBar tabs={visibleTabs} active={tab} onChange={setTab}/>
+      <div style={{maxWidth:1080,margin:'0 auto',padding:'clamp(20px,4vw,32px) clamp(16px,3vw,24px)'}}>
+        <TabContent client={client} tab={tab} isAdmin={false} onUpdate={onUpdate}/>
+      </div>
+    </div>
+  );
+}
+
+// ── Client View (admin) ──────────────────────────────────────────────────────
+function ClientView({client,admins,isAdmin,tab,setTab,onBack,onUpdate,adminName}){
+  const lead = admins&&admins.find(a=>a.id===client.leadId);
+  const days = Math.ceil((new Date(client.date)-new Date())/86400000);
+  return (
+    <div style={{minHeight:'100vh',background:'#FAFAF8'}}>
+      <Header
+        left={<><button onClick={onBack} style={{background:'none',border:'none',color:'#1C1C1C',cursor:'pointer',fontSize:13}}>← Back</button><span style={{width:1,height:20,background:'#E5E5E0'}}/><span style={{fontFamily:"'Great Vibes',cursive",fontSize:24,color:'#1C1C1C'}}>{client.bride} & {client.groom}</span><span className="hide-sm" style={{fontSize:12,color:'#8A8A82'}}>{client.venue}</span></>}
+        right={<><div className="hide-sm" style={{display:'flex',alignItems:'center',gap:6}}>{lead&&<><Avatar name={lead.name} size={22}/><span style={{fontSize:11,color:'#8A8A82'}}>{lead.name}</span></>}</div><div style={{textAlign:'right'}}><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:400,color:'#1C1C1C',lineHeight:1}}>{days>0?days:0}</div><div style={{fontSize:9,color:'#8A8A82',letterSpacing:'0.1em',textTransform:'uppercase'}}>days</div></div></>}
+      />
+      <TabBar tabs={ADMIN_TABS} active={tab} onChange={setTab}/>
+      <div style={{maxWidth:1080,margin:'0 auto',padding:'clamp(20px,4vw,32px) clamp(16px,3vw,24px)'}}>
+        <TabContent client={client} tab={tab} isAdmin={isAdmin} onUpdate={onUpdate}/>
+      </div>
+    </div>
+  );
+}
+
+function TabBar({tabs,active,onChange}){
+  return (
+    <div style={{background:'#fff',borderBottom:'1px solid #E5E5E0',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+      <div style={{display:'flex',padding:'0 clamp(16px,4vw,36px)',minWidth:'max-content'}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>onChange(t.id)} style={{padding:'12px 16px',border:'none',background:'none',cursor:'pointer',fontSize:12,fontWeight:active===t.id?600:400,color:active===t.id?'#1C1C1C':'#8A8A82',borderBottom:active===t.id?'2px solid #1C1C1C':'2px solid transparent',fontFamily:'inherit',whiteSpace:'nowrap',letterSpacing:'0.04em'}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TabContent({client,tab,isAdmin,onUpdate}){
+  if(tab==='roadmap')    return <RoadmapTab    client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='vendors')    return <VendorsTab    client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='setup')      return <SetupTab      client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='rundown')    return <RundownTab    client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='design')     return <DesignTab     client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='moodboard')  return <MoodBoardTab  client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='budget')     return <BudgetTab     client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='family')     return <FamilyTab     client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  if(tab==='inspection') return <InspectionTab client={client} isAdmin={isAdmin} onUpdate={onUpdate}/>;
+  return null;
+}
+
+// ── Section heading ──────────────────────────────────────────────────────────
+function SectionH({title,sub,action}){
+  return (
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}}>
+      <div>
+        <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px',letterSpacing:'0.04em'}}>{title}</h2>
+        {sub&&<p style={{color:'#8A8A82',margin:0,fontSize:12}}>{sub}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// ROADMAP TAB
+// ════════════════════════════════════════════════════════════════
+function RoadmapTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd] = useState(false);
+  const [editing,setEditing] = useState(null);
+  const ef = {category:'Venue',item:'',status:'pending',notes:'',dueDate:'',adminOnly:false};
+  const [form,setForm] = useState(ef);
+
+  const visible = isAdmin ? client.roadmap : client.roadmap.filter(r=>!r.adminOnly&&!(client.hiddenRoadmapIds||[]).includes(r.id));
+  const cats = RCATS.filter(c=>visible.some(r=>r.category===c));
+  const counts = Object.fromEntries(Object.keys(STATUS).map(k=>[k,visible.filter(r=>r.status===k).length]));
+
+  const save = () => {
+    const updated = editing ? client.roadmap.map(r=>r.id===editing?{...r,...form}:r) : [...client.roadmap,{...form,id:'r'+Date.now()}];
+    onUpdate({...client,roadmap:updated});
+    setShowAdd(false);setEditing(null);setForm(ef);
+  };
+
+  const tv=(client.vendors||[]).length, cv=(client.vendors||[]).filter(v=>v.confirmed).length;
+  const vpct=tv>0?Math.round((cv/tv)*100):0;
+
+  return (
+    <div className="fade">
+      <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap',alignItems:'center'}}>
+        {Object.entries(STATUS).map(([k,s])=>counts[k]>0&&(
+          <div key={k} style={{background:s.bg,border:'1px solid '+s.border,borderRadius:16,padding:'4px 12px',display:'flex',alignItems:'center',gap:6}}>
+            <div style={{width:6,height:6,borderRadius:'50%',background:s.color}}/><span style={{fontSize:12,color:s.color,fontWeight:600}}>{counts[k]}</span><span style={{fontSize:12,color:'#555'}}>{s.label}</span>
+          </div>
+        ))}
+        {isAdmin&&<Btn onClick={()=>{setEditing(null);setForm(ef);setShowAdd(true);}} style={{marginLeft:'auto',fontSize:11,padding:'6px 14px'}}>＋ Add Item</Btn>}
+      </div>
+
+      {tv>0&&(
+        <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'14px 18px',marginBottom:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:12,color:'#555',fontWeight:500}}>Vendors confirmed</span><span style={{fontSize:12,fontWeight:600,color:vpct>=100?'#16a34a':vpct>=50?'#d97706':'#dc2626'}}>{cv}/{tv}</span></div>
+          <div style={{background:'#F0F0EC',borderRadius:5,height:8,overflow:'hidden'}}><div style={{background:vpct>=100?'#16a34a':'#1C1C1C',height:8,borderRadius:5,width:vpct+'%',transition:'width 0.5s'}}/></div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:11,color:'#aaa'}}>
+            <span>{vpct}% locked in</span>
+            {vpct>=100?<span style={{color:'#16a34a',fontWeight:600}}>✓ All confirmed!</span>:<span>{tv-cv} pending</span>}
+          </div>
+        </div>
+      )}
+
+      {cats.length===0&&(
+        <div style={{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0'}}>
+          <div style={{fontSize:32,marginBottom:10}}>📋</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa',marginBottom:6}}>No roadmap items yet</div>
+          <p style={{color:'#aaa',fontSize:12,maxWidth:320,margin:'0 auto'}}>{isAdmin?'Add items to track venue, catering, florals, transport and more.':'Your planner will add items here.'}</p>
+        </div>
+      )}
+
+      {cats.map(cat=>(
+        <div key={cat} style={{marginBottom:18}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:'0 0 8px',paddingLeft:10,borderLeft:'2px solid #1C1C1C'}}>{cat}</h3>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {visible.filter(r=>r.category===cat).map(r=>{
+              const s=STATUS[r.status]||STATUS.pending;
+              return (
+                <div key={r.id} style={{background:'#fff',border:'1px solid '+s.border,borderRadius:8,padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
+                  <div style={{display:'flex',gap:8,flex:1}}>
+                    <div style={{width:7,height:7,borderRadius:'50%',background:s.color,marginTop:5,flexShrink:0}}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:500,color:'#1C1C1C',fontSize:13,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                        {r.item}
+                        {isAdmin&&r.adminOnly&&<span style={{fontSize:9,background:'#f0f0ff',color:'#7c3aed',padding:'1px 6px',borderRadius:6}}>Admin only</span>}
+                      </div>
+                      {r.notes&&<div style={{fontSize:12,color:'#6A6A64',marginTop:2,lineHeight:1.5}}>{r.notes}</div>}
+                      {r.dueDate&&<div style={{fontSize:10,color:'#aaa',marginTop:3}}>Due: {new Date(r.dueDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>}
+                    </div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+                    <span style={{background:s.bg,color:s.color,fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:10,whiteSpace:'nowrap'}}>{s.label}</span>
+                    {isAdmin&&<>
+                      <button onClick={()=>{setEditing(r.id);setForm({category:r.category,item:r.item,status:r.status,notes:r.notes||'',dueDate:r.dueDate||'',adminOnly:!!r.adminOnly});setShowAdd(true);}} style={{background:'none',border:'none',cursor:'pointer',color:'#B5977A',fontSize:13,padding:2}}>✎</button>
+                      <button onClick={()=>onUpdate({...client,roadmap:client.roadmap.filter(x=>x.id!==r.id)})} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:13,padding:2}}>✕</button>
+                    </>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {showAdd&&(
+        <Modal title={editing?'Edit Item':'Add Roadmap Item'} onClose={()=>{setShowAdd(false);setEditing(null);}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <Field label="Category"><select style={{...I}} value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{RCATS.map(c=><option key={c}>{c}</option>)}</select></Field>
+            <Field label="Status"><select style={{...I}} value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.entries(STATUS).map(([k,s])=><option key={k} value={k}>{s.label}</option>)}</select></Field>
+          </div>
+          <Field label="Item / Description" mt={12}><Inp val={form.item} onChange={v=>setForm(p=>({...p,item:v}))}/></Field>
+          <Field label="Notes" mt={12}><textarea style={{...I,minHeight:60,resize:'vertical'}} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></Field>
+          <Field label="Due Date" mt={12}><Inp type="date" val={form.dueDate} onChange={v=>setForm(p=>({...p,dueDate:v}))}/></Field>
+          <label style={{display:'flex',alignItems:'center',gap:8,marginTop:12,cursor:'pointer',fontSize:13,color:'#6A6A64'}}>
+            <input type="checkbox" checked={!!form.adminOnly} onChange={e=>setForm(p=>({...p,adminOnly:e.target.checked}))}/>Admin only (hidden from couple)
+          </label>
+          <div style={{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>{setShowAdd(false);setEditing(null);}} outline>Cancel</Btn>
+            <Btn onClick={save}>{editing?'Update':'Add'}</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// VENDORS TAB
+// ════════════════════════════════════════════════════════════════
+function VendorsTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd]         = useState(false);
+  const [editing,setEditing]         = useState(null);
+  const [showDocs,setShowDocs]       = useState(null);
+  const [showLibrary,setShowLibrary] = useState(false);
+  const [filter,setFilter]           = useState('All');
+  const ef = {cat:'Venue',name:'',social:'',sType:'instagram',phone:'',contact:'',notes:'',confirmed:false,adminOnly:false,docs:[]};
+  const [form,setForm] = useState(ef);
+
+  const visible = isAdmin ? client.vendors : client.vendors.filter(v=>!v.adminOnly);
+  const filtered = filter==='All' ? visible : visible.filter(v=>v.cat===filter);
+  const activeCats = VCATS.filter(c=>visible.some(v=>v.cat===c));
+  const grouped = VCATS.reduce((acc,cat)=>{const items=filtered.filter(v=>v.cat===cat);if(items.length)acc[cat]=items;return acc;},{});
+
+  const saveVendor = () => {
+    const updated = editing ? client.vendors.map(v=>v.id===editing?{...v,...form}:v) : [...client.vendors,{...form,id:'v'+Date.now()}];
+    onUpdate({...client,vendors:updated});
+    setShowAdd(false);setEditing(null);setForm(ef);
+  };
+
+  const docVendor = client.vendors.find(v=>v.id===showDocs);
+
+  return (
+    <div className="fade">
+      <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap',alignItems:'center'}}>
+        {['All',...activeCats].map(c=>(
+          <button key={c} onClick={()=>setFilter(c)} style={{padding:'4px 12px',borderRadius:14,border:'1.5px solid '+(filter===c?'#1C1C1C':'#E5E5E0'),background:filter===c?'#1C1C1C':'#fff',color:filter===c?'#fff':'#8A8A82',fontSize:11,cursor:'pointer',fontFamily:'inherit',fontWeight:filter===c?600:400}}>{c}</button>
+        ))}
+        {isAdmin&&(
+          <div style={{display:'flex',gap:8,marginLeft:'auto'}}>
+            <Btn onClick={()=>setShowLibrary(true)} outline style={{fontSize:11,padding:'6px 12px'}}>📚 Library</Btn>
+            <Btn onClick={()=>{setEditing(null);setForm(ef);setShowAdd(true);}} style={{fontSize:11,padding:'6px 14px'}}>＋ Add</Btn>
+          </div>
+        )}
+      </div>
+
+      {visible.length===0&&(
+        <div style={{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0'}}>
+          <div style={{fontSize:32,marginBottom:10}}>🏢</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa'}}>No vendors yet</div>
+          {isAdmin&&<p style={{color:'#aaa',fontSize:12,marginTop:6}}>Add vendors or use the Library to add JMB regulars in one click.</p>}
+        </div>
+      )}
+
+      {Object.entries(grouped).map(([cat,vendors])=>(
+        <div key={cat} style={{marginBottom:22}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:'0 0 10px',paddingLeft:10,borderLeft:'2px solid #1C1C1C'}}>{cat}</h3>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:12}}>
+            {vendors.map(v=>{
+              const docCount=(v.docs||[]).length;
+              return (
+                <div key={v.id} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',overflow:'hidden'}}>
+                  <div style={{background:v.confirmed?'#f0fdf4':'#fffbeb',padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E5E5E0'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6}}>
+                      <span style={{fontWeight:600,color:'#1C1C1C',fontSize:13}}>{v.name}</span>
+                      {isAdmin&&v.adminOnly&&<span style={{fontSize:9,background:'#f0f0ff',color:'#7c3aed',padding:'1px 6px',borderRadius:6}}>Admin</span>}
+                    </div>
+                    <span style={{fontSize:10,fontWeight:600,color:v.confirmed?'#16a34a':'#d97706',background:v.confirmed?'#dcfce7':'#fef9c3',padding:'2px 8px',borderRadius:8}}>{v.confirmed?'Confirmed':'Pending'}</span>
+                  </div>
+                  <div style={{padding:'10px 14px'}}>
+                    {v.social&&<div style={{marginBottom:6}}><SocialBtn social={v.social} sType={v.sType}/></div>}
+                    {v.phone&&<div style={{fontSize:12,color:'#555',marginBottom:4}}>📞 {v.phone}</div>}
+                    {v.contact&&<div style={{fontSize:12,color:'#555',marginBottom:4}}>👤 {v.contact}</div>}
+                    {v.notes&&<div style={{fontSize:11,color:'#aaa',fontStyle:'italic',borderTop:'1px solid #F5F5F2',paddingTop:6,marginTop:4}}>{v.notes}</div>}
+                    {(docCount>0||(isAdmin))&&(
+                      <button onClick={()=>setShowDocs(v.id)} style={{...BO,fontSize:11,padding:'4px 10px',marginTop:6,width:'100%',borderColor:'#B5977A',color:'#B5977A'}}>
+                        📄 {docCount>0?docCount+' doc'+(docCount!==1?'s':''):'Documents & Quotes'}
+                      </button>
+                    )}
+                    {isAdmin&&(
+                      <div style={{display:'flex',gap:6,marginTop:6}}>
+                        <button onClick={()=>{setEditing(v.id);setForm({cat:v.cat,name:v.name,social:v.social||'',sType:v.sType||'instagram',phone:v.phone||'',contact:v.contact||'',notes:v.notes||'',confirmed:!!v.confirmed,adminOnly:!!v.adminOnly,docs:v.docs||[]});setShowAdd(true);}} style={{...BO,fontSize:11,padding:'4px 10px',flex:1}}>Edit</button>
+                        <button onClick={()=>onUpdate({...client,vendors:client.vendors.filter(x=>x.id!==v.id)})} style={{...BO,fontSize:11,padding:'4px 10px',color:'#dc2626',borderColor:'#fca5a5'}}>✕</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {showAdd&&(
+        <Modal title={editing?'Edit Vendor':'Add Vendor'} onClose={()=>{setShowAdd(false);setEditing(null);}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <Field label="Category"><select style={{...I}} value={form.cat} onChange={e=>setForm(p=>({...p,cat:e.target.value}))}>{VCATS.map(c=><option key={c}>{c}</option>)}</select></Field>
+            <Field label="Name"><Inp val={form.name} onChange={v=>setForm(p=>({...p,name:v}))}/></Field>
+          </div>
+          <div style={{marginTop:12}}>
+            <Lbl t="Social / Website"/>
+            <div style={{display:'flex',gap:8}}>
+              <select style={{...I,width:'auto',flexShrink:0}} value={form.sType} onChange={e=>setForm(p=>({...p,sType:e.target.value}))}>{STYPES.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}</select>
+              <Inp val={form.social} onChange={v=>setForm(p=>({...p,social:v}))} placeholder="@handle or URL"/>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}}>
+            <Field label="Phone"><Inp val={form.phone} onChange={v=>setForm(p=>({...p,phone:v}))}/></Field>
+            <Field label="Contact"><Inp val={form.contact} onChange={v=>setForm(p=>({...p,contact:v}))}/></Field>
+          </div>
+          <Field label="Notes" mt={12}><textarea style={{...I,minHeight:50,resize:'vertical'}} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></Field>
+          <div style={{marginTop:12,display:'flex',gap:20}}>
+            <label style={{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13,color:'#6A6A64'}}><input type="checkbox" checked={!!form.confirmed} onChange={e=>setForm(p=>({...p,confirmed:e.target.checked}))}/> Confirmed</label>
+            <label style={{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13,color:'#6A6A64'}}><input type="checkbox" checked={!!form.adminOnly} onChange={e=>setForm(p=>({...p,adminOnly:e.target.checked}))}/> Admin only</label>
+          </div>
+          <div style={{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>{setShowAdd(false);setEditing(null);}} outline>Cancel</Btn>
+            <Btn onClick={saveVendor}>{editing?'Update':'Add'}</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {showLibrary&&(
+        <Modal title="JMB Vendor Library" onClose={()=>setShowLibrary(false)} wide>
+          <p style={{color:'#8A8A82',fontSize:12,marginBottom:14}}>Add vendors you work with regularly — all details pre-filled.</p>
+          <div style={{display:'flex',flexDirection:'column',gap:8,maxHeight:400,overflowY:'auto'}}>
+            {JMB_LIBRARY.map((v,i)=>{
+              const added = client.vendors.some(x=>x.name===v.name);
+              return (
+                <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0'}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13,color:'#1C1C1C'}}>{v.name}</div>
+                    <div style={{fontSize:11,color:'#8A8A82',marginTop:2}}>{v.cat}{v.phone?' · '+v.phone:''}{v.social?' · '+v.social.replace('https://instagram.com/','@'):''}</div>
+                  </div>
+                  {added?<span style={{fontSize:10,color:'#16a34a',background:'#f0fdf4',padding:'2px 8px',borderRadius:8,fontWeight:600}}>✓ Added</span>:
+                    <Btn onClick={()=>{onUpdate({...client,vendors:[...client.vendors,{...v,id:'v'+Date.now(),confirmed:false,adminOnly:false,docs:[]}]});}} style={{fontSize:11,padding:'5px 12px'}}>Add</Btn>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:'flex',justifyContent:'flex-end',marginTop:14}}>
+            <Btn onClick={()=>setShowLibrary(false)} outline>Done</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {showDocs&&docVendor&&(
+        <DocsModal vendor={docVendor} isAdmin={isAdmin} onClose={()=>setShowDocs(null)} onSave={u=>onUpdate({...client,vendors:client.vendors.map(v=>v.id===u.id?u:v)})}/>
+      )}
+    </div>
+  );
+}
+
+function DocsModal({vendor,isAdmin,onClose,onSave}){
+  const [docs,setDocs]   = useState(vendor.docs||[]);
+  const [adding,setAdding] = useState(false);
+  const [pf,setPf]       = useState({title:'',description:'',price:'',fileName:'',fileData:'',chosen:false});
+  const fileRef = useRef();
+
+  const handleFile = e => {
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload = ev => setPf(p=>({...p,fileName:f.name,fileData:ev.target.result}));
+    r.readAsDataURL(f);
+  };
+  const add = () => {
+    if(!pf.title) return;
+    const updated = [...docs,{id:'d'+Date.now(),title:pf.title,description:pf.description,price:pf.price,fileName:pf.fileName,fileData:pf.fileData,chosen:false}];
+    setDocs(updated); onSave({...vendor,docs:updated});
+    setAdding(false); setPf({title:'',description:'',price:'',fileName:'',fileData:'',chosen:false});
+  };
+  const toggleChosen = id => { const u=docs.map(d=>({...d,chosen:d.id===id?!d.chosen:false})); setDocs(u); onSave({...vendor,docs:u}); };
+  const del = id => { const u=docs.filter(d=>d.id!==id); setDocs(u); onSave({...vendor,docs:u}); };
+
+  return (
+    <Modal title={vendor.name+' — Documents & Quotes'} onClose={onClose} wide>
+      <p style={{color:'#8A8A82',fontSize:12,marginBottom:14}}>Budgets, contracts, pack info, and any files for this vendor.</p>
+      {docs.length===0&&<div style={{textAlign:'center',padding:'20px',color:'#ccc',background:'#F8F8F6',borderRadius:8,marginBottom:12,fontSize:13}}>No documents yet.</div>}
+      <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+        {docs.map(d=>(
+          <div key={d.id} style={{background:d.chosen?'#f0fdf4':'#F8F8F6',borderRadius:8,border:'1px solid '+(d.chosen?'#86efac':'#E5E5E0'),padding:'12px 14px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
+            <div style={{flex:1}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                <span style={{fontWeight:600,fontSize:13,color:'#1C1C1C'}}>{d.title}</span>
+                {d.chosen&&<span style={{fontSize:10,fontWeight:600,color:'#16a34a',background:'#dcfce7',padding:'1px 8px',borderRadius:8}}>✓ Chosen</span>}
+              </div>
+              {d.description&&<div style={{fontSize:12,color:'#6A6A64',marginBottom:3}}>{d.description}</div>}
+              {d.price&&<div style={{fontSize:13,color:'#B5977A',fontWeight:600}}>€{d.price}</div>}
+              {d.fileData&&<a href={d.fileData} download={d.fileName} style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:4,fontSize:11,color:'#7c3aed',background:'#f5f3ff',padding:'2px 8px',borderRadius:12,border:'1px solid #e9d5ff',textDecoration:'none'}}>📄 {d.fileName||'Download'}</a>}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:5,alignItems:'flex-end'}}>
+              <button onClick={()=>toggleChosen(d.id)} style={{...BO,fontSize:10,padding:'3px 8px',borderColor:d.chosen?'#86efac':'#E5E5E0',color:d.chosen?'#16a34a':'#8A8A82'}}>{d.chosen?'Unchose':'Choose'}</button>
+              {isAdmin&&<button onClick={()=>del(d.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#fca5a5',fontSize:11}}>Remove</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {isAdmin&&!adding&&<Btn onClick={()=>setAdding(true)} style={{width:'100%',padding:'10px'}}>＋ Add Document / Quote</Btn>}
+      {isAdmin&&adding&&(
+        <div style={{background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0',padding:16}}>
+          <Field label="Title"><Inp val={pf.title} onChange={v=>setPf(p=>({...p,title:v}))} placeholder="e.g. Budget Pack A · Contract · Pack info"/></Field>
+          <Field label="Description" mt={10}><textarea style={{...I,minHeight:44,resize:'vertical'}} value={pf.description} onChange={e=>setPf(p=>({...p,description:e.target.value}))}/></Field>
+          <Field label="Price (€)" mt={10}><Inp val={pf.price} onChange={v=>setPf(p=>({...p,price:v}))}/></Field>
+          <div style={{marginTop:10}}>
+            <Lbl t="File (PDF / Image)"/>
+            <button onClick={()=>fileRef.current&&fileRef.current.click()} style={{...BO,width:'100%'}}>{pf.fileName?'📄 '+pf.fileName:'📎 Choose file'}</button>
+            <input ref={fileRef} type="file" accept="application/pdf,image/*" style={{display:'none'}} onChange={handleFile}/>
+          </div>
+          <div style={{display:'flex',gap:10,marginTop:12,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>setAdding(false)} outline>Cancel</Btn>
+            <Btn onClick={add}>Add</Btn>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// SETUP TAB
+// ════════════════════════════════════════════════════════════════
+function SetupTab({client,isAdmin,onUpdate}){
+  const setup = client.setup||{vendorArrivals:[],areas:[]};
+  const AREAS = ['Welcome / Rehearsal','Ceremony','Aperitif','Dinner','Dance'];
+
+  const addArr = () => onUpdate({...client,setup:{...setup,vendorArrivals:[...(setup.vendorArrivals||[]),{id:'va'+Date.now(),time:'',vendor:'',notes:''}]}});
+  const delArr = id => onUpdate({...client,setup:{...setup,vendorArrivals:(setup.vendorArrivals||[]).filter(v=>v.id!==id)}});
+  const upArr  = (id,f,v) => onUpdate({...client,setup:{...setup,vendorArrivals:(setup.vendorArrivals||[]).map(x=>x.id===id?{...x,[f]:v}:x)}});
+  const addArea = area => onUpdate({...client,setup:{...setup,areas:[...(setup.areas||[]),{id:'ar'+Date.now(),area,vendor:'',notes:''}]}});
+  const delArea = id => onUpdate({...client,setup:{...setup,areas:(setup.areas||[]).filter(a=>a.id!==id)}});
+  const upArea  = (id,f,v) => onUpdate({...client,setup:{...setup,areas:(setup.areas||[]).map(a=>a.id===id?{...a,[f]:v}:a)}});
+
+  return (
+    <div className="fade">
+      <SectionH title="Setup & Vendor Arrivals" sub="Arrival times and montage per area."/>
+
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontWeight:400,color:'#1C1C1C',margin:0}}>Vendor Arrival Times</h3>
+          {isAdmin&&<Btn onClick={addArr} style={{fontSize:11,padding:'5px 12px'}}>＋ Add</Btn>}
+        </div>
+        {(setup.vendorArrivals||[]).length===0&&<p style={{color:'#ccc',fontSize:12,textAlign:'center',padding:'12px 0'}}>No arrivals yet.</p>}
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {(setup.vendorArrivals||[]).map(v=>(
+            <div key={v.id} style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              {isAdmin?(
+                <><Inp val={v.time} onChange={x=>upArr(v.id,'time',x)} placeholder="10:30" style={{width:80,flexShrink:0}}/><Inp val={v.vendor} onChange={x=>upArr(v.id,'vendor',x)} placeholder="Vendor name" style={{flex:1,minWidth:120}}/><Inp val={v.notes} onChange={x=>upArr(v.id,'notes',x)} placeholder="Notes…" style={{flex:2,minWidth:160}}/><button onClick={()=>delArr(v.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}}>✕</button></>
+              ):(
+                <div style={{display:'flex',gap:14,padding:'7px 0',borderBottom:'1px solid #F5F5F2',width:'100%'}}>
+                  <span style={{width:60,color:'#B5977A',fontWeight:600,fontSize:12,flexShrink:0}}>{v.time}</span>
+                  <span style={{fontWeight:500,fontSize:12,minWidth:100}}>{v.vendor}</span>
+                  <span style={{color:'#6A6A64',fontSize:12}}>{v.notes}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {AREAS.map(area=>{
+        const items=(setup.areas||[]).filter(a=>a.area===area);
+        return (
+          <div key={area} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:12}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+              <h4 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:0,paddingLeft:8,borderLeft:'2px solid #1C1C1C'}}>{area}</h4>
+              {isAdmin&&<Btn onClick={()=>addArea(area)} outline style={{fontSize:10,padding:'3px 10px'}}>＋</Btn>}
+            </div>
+            {items.length===0&&<p style={{color:'#ccc',fontSize:11,margin:0}}>No setup notes.</p>}
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              {items.map(a=>(
+                <div key={a.id} style={{display:'flex',gap:8,alignItems:'center'}}>
+                  {isAdmin?(
+                    <><Inp val={a.vendor} onChange={v=>upArea(a.id,'vendor',v)} placeholder="Vendor" style={{width:100,flexShrink:0,fontSize:11}}/><Inp val={a.notes} onChange={v=>upArea(a.id,'notes',v)} placeholder="Setup description…" style={{flex:1,fontSize:11}}/><button onClick={()=>delArea(a.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:13}}>✕</button></>
+                  ):(
+                    <div style={{display:'flex',gap:12,width:'100%',borderBottom:'1px solid #F5F5F2',paddingBottom:4}}>
+                      <span style={{width:80,color:'#6A6A64',fontSize:12,fontWeight:500,flexShrink:0}}>{a.vendor}</span>
+                      <span style={{color:'#1C1C1C',fontSize:12}}>{a.notes}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div style={{background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0',padding:18}}>
+        {/* Guest & Staff Count Table */}
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:14}}>
+        <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}}>Total Number of Guests & Staff</h3>
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+            <thead>
+              <tr style={{background:'#F8F8F6'}}>
+                {['','Welcome Event','Wedding Day','Day 2'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left',fontWeight:600,color:'#8A8A82',letterSpacing:'0.06em',textTransform:'uppercase',fontSize:10,borderBottom:'1px solid #E5E5E0'}}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[['Adults','adultsWelcome','adultsWedding','adultsDay2'],['Children','kidsWelcome','kidsWedding','kidsDay2'],['Special Diets (guests)','dietsWelcome','dietsWedding','dietsDay2'],['Wedding Planners','plannersWelcome','plannersWedding','plannersDay2'],['Photo','photoWelcome','photoWedding','photoDay2'],['DJ + Sound','djWelcome','djWedding','djDay2'],['Special Diets (staff)','staffDietsWelcome','staffDietsWedding','staffDietsDay2']].map(([label,...keys])=>(
+                <tr key={label} style={{borderBottom:'1px solid #F5F5F2'}}>
+                  <td style={{padding:'7px 12px',fontWeight:label.includes('Planner')||label==='Photo'||label.includes('DJ')||label.includes('staff')?400:500,color:'#1C1C1C',background:label.includes('Planner')||label==='Photo'||label.includes('DJ')||label.includes('staff')?'#FAFAFA':'#fff',fontSize:11}}>{label}</td>
+                  {keys.map(k=>(
+                    <td key={k} style={{padding:'7px 12px'}}>
+                      {isAdmin
+                        ?<input style={{...I,fontSize:12,padding:'4px 8px',width:80}} value={(client.guestCounts||{})[k]||''} onChange={e=>onUpdate({...client,guestCounts:{...(client.guestCounts||{}),[k]:e.target.value}})}/>
+                        :<span style={{fontSize:12,color:'#1C1C1C'}}>{(client.guestCounts||{})[k]||'—'}</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}}>Instagram Handles</h3>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:10}}>
+          {[
+              ['Bride','bride'],['Groom','groom'],['Wedding Planner','planner'],
+              ['Wedding Dress','dress'],['Suit','suit'],['Jewellery','jewellery'],
+              ['Venue','venue'],['Floral Design','florist'],['Stationery','stationery'],
+              ['AV Company','av'],['DJ','dj'],['Live Music','music'],
+              ['Photo','photo'],['Video','video'],['Content Creator','content'],
+            ].map(([label,key])=>(
+            <div key={key}>
+              <Lbl t={label}/>
+              {isAdmin
+                ?<Inp val={(client.instagramHandles||{})[key]||''} onChange={v=>onUpdate({...client,instagramHandles:{...(client.instagramHandles||{}),[key]:v}})} placeholder="@handle"/>
+                :<div style={{fontSize:12,paddingTop:3,minHeight:20}}>
+                  {(client.instagramHandles||{})[key]
+                    ?<a href={'https://instagram.com/'+((client.instagramHandles||{})[key]||'').replace('@','')} target="_blank" rel="noreferrer" style={{color:'#B5977A',textDecoration:'none'}}>{(client.instagramHandles||{})[key]}</a>
+                    :<span style={{color:'#ddd'}}>—</span>}
+                </div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// RUN DOWN TAB
+// ════════════════════════════════════════════════════════════════
+function RundownTab({client,isAdmin,onUpdate}){
+  const rundown = client.rundown||{days:[]};
+  const [showAddDay,setShowAddDay]     = useState(false);
+  const [newLabel,setNewLabel]         = useState('');
+  const [collapsed,setCollapsed]       = useState({});
+
+  const toggle = id => setCollapsed(p=>({...p,[id]:!p[id]}));
+
+  const addDay = () => {
+    if(!newLabel.trim()) return;
+    onUpdate({...client,rundown:{...rundown,days:[...(rundown.days||[]),{id:'d'+Date.now(),label:newLabel,items:[]}]}});
+    setShowAddDay(false); setNewLabel('');
+  };
+  const delDay = id => onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).filter(d=>d.id!==id)}});
+  const addItem = dayId => onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).map(d=>d.id===dayId?{...d,items:[...(d.items||[]),{id:'i'+Date.now(),time:'',who:'',action:''}]}:d)}});
+  const delItem = (dayId,itemId) => onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).map(d=>d.id===dayId?{...d,items:(d.items||[]).filter(i=>i.id!==itemId)}:d)}});
+  const upItem  = (dayId,itemId,f,v) => onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).map(d=>d.id===dayId?{...d,items:(d.items||[]).map(i=>i.id===itemId?{...i,[f]:v}:i)}:d)}});
+  const upLabel = (dayId,v) => onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).map(d=>d.id===dayId?{...d,label:v}:d)}});
+  const move    = (dayId,itemId,dir) => {
+    const day = (rundown.days||[]).find(d=>d.id===dayId); if(!day) return;
+    const idx = day.items.findIndex(i=>i.id===itemId);
+    const ni  = [...day.items]; const sw=idx+dir;
+    if(sw<0||sw>=ni.length) return;
+    const tmp=ni[idx]; ni[idx]=ni[sw]; ni[sw]=tmp;
+    onUpdate({...client,rundown:{...rundown,days:(rundown.days||[]).map(d=>d.id===dayId?{...d,items:ni}:d)}});
+  };
+
+  const isHeader = action => action&&action.startsWith('──');
+
+  return (
+    <div className="fade">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}}>
+        <div>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px',letterSpacing:'0.04em'}}>Run Down</h2>
+          <p style={{color:'#8A8A82',margin:0,fontSize:12}}>Day-by-day schedule for each day of celebration.</p>
+        </div>
+        {isAdmin&&<Btn onClick={()=>setShowAddDay(true)} outline>＋ Add Day</Btn>}
+      </div>
+
+
+
+      {(rundown.days||[]).map(day=>{
+        const isCollapsed=collapsed[day.id];
+        return (
+          <div key={day.id} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',marginBottom:14,overflow:'hidden'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 18px',background:'#FAFAFA',borderBottom:isCollapsed?'none':'1px solid #F0F0EC',cursor:'pointer'}} onClick={()=>toggle(day.id)}>
+              <div style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+                <span style={{fontSize:12,color:'#8A8A82',transform:isCollapsed?'rotate(-90deg)':'rotate(0deg)',transition:'transform 0.2s',display:'inline-block'}}>▼</span>
+                {isAdmin
+                  ?<input style={{...I,border:'none',background:'transparent',fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,padding:0,flex:1}} value={day.label} onChange={e=>{e.stopPropagation();upLabel(day.id,e.target.value);}} onClick={e=>e.stopPropagation()}/>
+                  :<span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C'}}>{day.label}</span>}
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:8}} onClick={e=>e.stopPropagation()}>
+                {isAdmin&&<><Btn onClick={()=>addItem(day.id)} outline style={{fontSize:10,padding:'3px 10px'}}>＋ Line</Btn><button onClick={()=>delDay(day.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15,padding:2}}>✕</button></>}
+                <span style={{fontSize:11,color:'#aaa',marginLeft:4}}>{(day.items||[]).length}</span>
+              </div>
+            </div>
+            {!isCollapsed&&(
+              <div style={{padding:'8px 18px 14px'}}>
+                {isAdmin&&(day.items||[]).length>0&&(
+                  <div style={{display:'grid',gridTemplateColumns:'76px 110px 1fr 44px',gap:6,padding:'6px 0',borderBottom:'1px solid #F5F5F2',marginBottom:4}}>
+                    {['Time','Who','Action',''].map(h=><span key={h} style={{fontSize:9,color:'#8A8A82',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase'}}>{h}</span>)}
+                  </div>
+                )}
+                <div style={{display:'flex',flexDirection:'column',gap:isAdmin?3:0}}>
+                  {(day.items||[]).map((item,idx)=>{
+                    const hdr = isHeader(item.action);
+                    if(!isAdmin){
+                      return hdr?(
+                        <div key={item.id} style={{padding:'12px 0 3px',borderTop:'1px solid #E5E5E0',marginTop:6}}>
+                          <span style={{fontSize:10,fontWeight:700,color:'#8A8A82',letterSpacing:'0.14em',textTransform:'uppercase'}}>{item.action.split('──').filter(Boolean).join('').trim()}</span>
+                        </div>
+                      ):(
+                        <div key={item.id} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid #F8F8F8'}}>
+                          <span style={{width:60,color:'#B5977A',fontWeight:600,fontSize:12,flexShrink:0}}>{item.time}</span>
+                          {item.who&&<span style={{width:90,color:'#6A6A64',fontSize:11,flexShrink:0,fontStyle:'italic'}}>{item.who}</span>}
+                          <span style={{color:'#1C1C1C',fontSize:12,flex:1,lineHeight:1.4}}>{item.action}</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={item.id} style={{display:'grid',gridTemplateColumns:'76px 110px 1fr 44px',gap:6,alignItems:'center',background:hdr?'#F8F8F6':'transparent',borderRadius:hdr?5:0,padding:hdr?'2px 4px':'0'}}>
+                        <input style={{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff'}} placeholder="18:00" value={item.time} onChange={e=>upItem(day.id,item.id,'time',e.target.value)}/>
+                        <input style={{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff'}} placeholder="JMB…" value={item.who} onChange={e=>upItem(day.id,item.id,'who',e.target.value)}/>
+                        <input style={{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff',fontWeight:hdr?600:400}} value={item.action} onChange={e=>upItem(day.id,item.id,'action',e.target.value)}/>
+                        <div style={{display:'flex',alignItems:'center',gap:1}}>
+                          <button onClick={()=>move(day.id,item.id,-1)} disabled={idx===0} style={{background:'none',border:'none',cursor:idx===0?'default':'pointer',color:idx===0?'#F0F0EC':'#aaa',fontSize:11,padding:'2px'}}>↑</button>
+                          <button onClick={()=>move(day.id,item.id,1)} disabled={idx===(day.items||[]).length-1} style={{background:'none',border:'none',cursor:idx===(day.items||[]).length-1?'default':'pointer',color:idx===(day.items||[]).length-1?'#F0F0EC':'#aaa',fontSize:11,padding:'2px'}}>↓</button>
+                          <button onClick={()=>delItem(day.id,item.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:12,padding:'2px'}}>✕</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(day.items||[]).length===0&&<p style={{color:'#ccc',fontSize:11,margin:'8px 0',textAlign:'center'}}>No items. Click ＋ Line to add.</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {showAddDay&&(
+        <Modal title="Add Day" onClose={()=>setShowAddDay(false)}>
+          <Field label="Day Label"><Inp val={newLabel} onChange={setNewLabel} placeholder="e.g. Saturday 16th August — Wedding Day"/></Field>
+          <div style={{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>setShowAddDay(false)} outline>Cancel</Btn>
+            <Btn onClick={addDay}>Add Day</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// DESIGN TAB
+// ════════════════════════════════════════════════════════════════
+function DesignTab({client,isAdmin,onUpdate}){
+  const [activeZone,setActiveZone]     = useState('welcome');
+  // activeSec removed — fields are zone-specific
+  const [newColor,setNewColor]         = useState('#B5977A');
+  const s     = client.style||{};
+  const zones = client.designZones||{};
+  const palette = s.palette||['#1C1C1C','#F5F0E8','#B5977A'];
+
+  const upColor = (idx,v) => onUpdate({...client,style:{...s,palette:palette.map((c,i)=>i===idx?v:c)}});
+  const addColor = () => onUpdate({...client,style:{...s,palette:[...palette,newColor]}});
+  const delColor = idx => onUpdate({...client,style:{...s,palette:palette.filter((_,i)=>i!==idx)}});
+
+  const gv = (zoneId,sec,key) => ((zones[zoneId]||{})[sec]||{})[key]||'';
+  const sv = (zoneId,sec,key,val) => {
+    const updated = {...zones,[zoneId]:{...(zones[zoneId]||{}),[sec]:{...((zones[zoneId]||{})[sec]||{}),[key]:val}}};
+    onUpdate({...client,designZones:updated});
+  };
+
+  const secs = null; // fields are zone-specific, no sub-sections needed
+  const cz = DESIGN_ZONES.find(z=>z.id===activeZone);
+
+  return (
+    <div className="fade">
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:16}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontWeight:400,color:'#1C1C1C',margin:0}}>Colour Palette</h3>
+          {isAdmin&&<span style={{fontSize:10,color:'#ccc',letterSpacing:'0.04em'}}>Click swatch to edit</span>}
+        </div>
+        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'flex-start'}}>
+          {palette.map((c,i)=>(
+            <div key={i} style={{textAlign:'center',position:'relative'}}>
+              <div style={{width:60,height:60,borderRadius:10,background:c,border:'1.5px solid rgba(0,0,0,0.08)',boxShadow:'0 3px 10px rgba(0,0,0,0.10)',marginBottom:4,position:'relative',overflow:'hidden'}}>
+                {isAdmin&&<input type="color" value={c} onChange={e=>upColor(i,e.target.value)} style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0,cursor:'pointer'}}/>}
+              </div>
+              <div style={{fontSize:9,color:'#8A8A82'}}>{c.toUpperCase()}</div>
+              {isAdmin&&<button onClick={()=>delColor(i)} style={{position:'absolute',top:-4,right:-4,width:15,height:15,borderRadius:'50%',background:'#dc2626',border:'1.5px solid #fff',cursor:'pointer',fontSize:9,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>✕</button>}
+            </div>
+          ))}
+          {isAdmin&&(
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:9,color:'#8A8A82',marginBottom:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.1em'}}>Add</div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{position:'relative',width:38,height:38,borderRadius:8,border:'1.5px dashed #DEDED8',overflow:'hidden',background:newColor}}>
+                  <input type="color" value={newColor} onChange={e=>setNewColor(e.target.value)} style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0,cursor:'pointer'}}/>
+                </div>
+                <Btn onClick={addColor} style={{padding:'6px 10px',fontSize:12}}>＋</Btn>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:16}}>
+        <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 10px'}}>Overall Style & Mood</h3>
+        {isAdmin
+          ?<textarea style={{...I,minHeight:50,resize:'vertical',fontSize:12}} placeholder="e.g. Elegant · Sophisticated · Classic with modern twist…" value={s.mood||''} onChange={e=>onUpdate({...client,style:{...s,mood:e.target.value}})}/>
+          :<p style={{color:'#6A6A64',fontSize:13,lineHeight:1.7,margin:0,fontStyle:'italic'}}>{s.mood||'—'}</p>}
+      </div>
+
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:16}}>
+        <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}}>Wedding Party Florals</h3>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
+          {[['Bride Bouquet','brideBouquet'],["Bridesmaids' Bouquets",'bridesmaidsBouquet'],['Groom Boutonnière','groomBout'],['Groomsmen Boutonnières','groomsmenBout'],['Flower Girls','flowerGirls'],['Page Boys','pageBoys'],["Parents' Flowers",'parentFlowers'],['Ring Box','ringBox']].map(([label,key])=>(
+            <div key={key}><Lbl t={label}/>{isAdmin?<input style={{...I,fontSize:12}} value={(s.partyFlorals||{})[key]||''} onChange={e=>onUpdate({...client,style:{...s,partyFlorals:{...(s.partyFlorals||{}),[key]:e.target.value}}})}/>:<div style={{fontSize:12,color:'#1C1C1C',paddingTop:3,minHeight:20}}>{(s.partyFlorals||{})[key]||<span style={{color:'#ccc'}}>—</span>}</div>}</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',overflow:'hidden'}}>
+        <div style={{display:'flex',overflowX:'auto',borderBottom:'1px solid #E5E5E0',background:'#FAFAFA'}}>
+          {DESIGN_ZONES.map(z=>(
+            <button key={z.id} onClick={()=>setActiveZone(z.id)}
+              style={{padding:'11px 16px',border:'none',background:activeZone===z.id?'#fff':'transparent',borderBottom:activeZone===z.id?'2px solid #1C1C1C':'2px solid transparent',color:activeZone===z.id?'#1C1C1C':'#8A8A82',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:activeZone===z.id?600:400,whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
+              {z.icon} {z.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{padding:20}}>
+          <div style={{fontSize:11,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:14}}>{cz&&cz.icon} {cz&&cz.label}</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
+            {(ZONE_FIELDS[activeZone]||[]).map(field=>(
+              <div key={field.key}><Lbl t={field.label}/>{isAdmin?<input style={{...I,fontSize:12}} value={gv(activeZone,'fields',field.key)} onChange={e=>sv(activeZone,'fields',field.key,e.target.value)}/>:<div style={{fontSize:12,paddingTop:3,minHeight:20,fontStyle:gv(activeZone,'fields',field.key)?'normal':'italic',color:gv(activeZone,'fields',field.key)?'#1C1C1C':'#ccc'}}>{gv(activeZone,'fields',field.key)||'—'}</div>}</div>
+            ))}
+          </div>
+          <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid #F0F0EC'}}>
+            <Lbl t="Notes"/>
+            {isAdmin?<textarea style={{...I,minHeight:50,resize:'vertical',fontSize:12}} placeholder={'Notes for '+(cz&&cz.label)+'…'} value={gv(activeZone,'notes','general')} onChange={e=>sv(activeZone,'notes','general',e.target.value)}/>:<div style={{fontSize:12,color:gv(activeZone,'notes','general')?'#1C1C1C':'#ccc',lineHeight:1.6,fontStyle:gv(activeZone,'notes','general')?'normal':'italic'}}>{gv(activeZone,'notes','general')||'—'}</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// MOOD BOARD TAB
+// ════════════════════════════════════════════════════════════════
+function MoodBoardTab({client,isAdmin,onUpdate}){
+  const [adding,setAdding] = useState(false);
+  const [pf,setPf]         = useState({caption:'',url:'',fileData:''});
+  const [preview,setPreview] = useState(null);
+  const fileRef = useRef();
+  const board = client.moodboard||[];
+
+  const handleFile = e => { const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setPf(p=>({...p,fileData:ev.target.result,url:''}));r.readAsDataURL(f); };
+  const add = () => { const src=pf.fileData||pf.url;if(!src)return;onUpdate({...client,moodboard:[...board,{id:'mb'+Date.now(),src,caption:pf.caption}]});setAdding(false);setPf({caption:'',url:'',fileData:''}); };
+  const del = id => onUpdate({...client,moodboard:board.filter(x=>x.id!==id)});
+
+  return (
+    <div className="fade">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:20,flexWrap:'wrap',gap:10}}>
+        <div>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px',letterSpacing:'0.04em'}}>Mood Board</h2>
+          <p style={{color:'#8A8A82',margin:0,fontSize:12}}>Inspiration images for the wedding aesthetic.</p>
+        </div>
+        {isAdmin&&<Btn onClick={()=>setAdding(true)}>＋ Add Image</Btn>}
+      </div>
+      {board.length===0&&<div style={{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'2px dashed #DEDED8'}}><div style={{fontSize:40,marginBottom:10}}>🌸</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa'}}>No images yet</div></div>}
+      <div className="masonry">
+        {board.map(img=>(
+          <div key={img.id} className="masonry-item" style={{position:'relative',borderRadius:10,overflow:'hidden',border:'1px solid #E5E5E0',cursor:'pointer'}} onClick={()=>setPreview(img)}>
+            <img src={img.src} alt={img.caption||''} style={{width:'100%',display:'block',objectFit:'cover'}} onError={e=>{e.target.style.display='none';}}/>
+            {img.caption&&<div style={{padding:'6px 10px',fontSize:12,color:'#555',background:'#fff'}}>{img.caption}</div>}
+            {isAdmin&&<button onClick={e=>{e.stopPropagation();del(img.id);}} style={{position:'absolute',top:6,right:6,background:'rgba(0,0,0,0.5)',border:'none',borderRadius:'50%',width:24,height:24,cursor:'pointer',color:'#fff',fontSize:12}}>✕</button>}
+          </div>
+        ))}
+      </div>
+      {adding&&(
+        <Modal title="Add Image" onClose={()=>{setAdding(false);setPf({caption:'',url:'',fileData:''});}}>
+          <Field label="Caption (optional)"><Inp val={pf.caption} onChange={v=>setPf(p=>({...p,caption:v}))}/></Field>
+          <div style={{marginTop:12}}>
+            <Lbl t="Upload Image"/>
+            <button onClick={()=>fileRef.current&&fileRef.current.click()} style={{...BO,width:'100%',padding:'10px',borderStyle:'dashed'}}>{pf.fileData?'✓ Image selected':'📷 Choose image'}</button>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleFile}/>
+          </div>
+          <div style={{margin:'10px 0',textAlign:'center',color:'#ccc',fontSize:11}}>— or paste a URL —</div>
+          <Field label="Image URL"><Inp val={pf.url} onChange={v=>setPf(p=>({...p,url:v,fileData:''}))} placeholder="https://…"/></Field>
+          {(pf.fileData||pf.url)&&<img src={pf.fileData||pf.url} alt="preview" style={{width:'100%',borderRadius:8,marginTop:10,maxHeight:160,objectFit:'cover',border:'1px solid #E5E5E0'}}/>}
+          <div style={{display:'flex',gap:10,marginTop:16,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>{setAdding(false);setPf({caption:'',url:'',fileData:''});}} outline>Cancel</Btn>
+            <Btn onClick={add}>Add</Btn>
+          </div>
+        </Modal>
+      )}
+      {preview&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={()=>setPreview(null)}>
+          <div style={{maxWidth:900,position:'relative'}} onClick={e=>e.stopPropagation()}>
+            <img src={preview.src} alt={preview.caption} style={{maxWidth:'100%',maxHeight:'80vh',borderRadius:8,objectFit:'contain',display:'block'}}/>
+            {preview.caption&&<div style={{textAlign:'center',color:'#ddd',fontSize:13,marginTop:8,fontStyle:'italic'}}>{preview.caption}</div>}
+            <button onClick={()=>setPreview(null)} style={{position:'absolute',top:-12,right:-12,background:'rgba(255,255,255,0.15)',border:'none',borderRadius:'50%',width:30,height:30,cursor:'pointer',color:'#fff',fontSize:16}}>✕</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// BUDGET TAB — matches JMB Master document structure exactly
+// ════════════════════════════════════════════════════════════════
+function BudgetTab({client,isAdmin,onUpdate}){
+  const [editTotals,setEditTotals] = useState(false);
+  const [tf,setTf] = useState({budget:client.budget||0,budgetPaid:client.budgetPaid||0});
+  const budgetLines = client.budgetLines||{};
+
+  const upLine = (sectionId,key,field,val) => {
+    const updated = {...budgetLines,[sectionId]:{...(budgetLines[sectionId]||{}),[key]:{...((budgetLines[sectionId]||{})[key]||{}),[field]:val}}};
+    onUpdate({...client,budgetLines:updated});
+  };
+  const getLine = (sectionId,key) => (budgetLines[sectionId]||{})[key]||{vendor:'',totalCost:'',paymentDetails:'',paymentsMade:'',pendingPayments:''};
+
+  const sectionTotal = (sectionId) => {
+    const sec = budgetLines[sectionId]||{};
+    return Object.values(sec).reduce((sum,line)=>sum+(parseFloat(line.totalCost)||0),0);
+  };
+  const grandTotal  = BUDGET_SECTIONS.reduce((s,sec)=>s+sectionTotal(sec.id),0);
+  const grandPaid   = BUDGET_SECTIONS.reduce((s,sec)=>{
+    const sec2=budgetLines[sec.id]||{};
+    return s+Object.values(sec2).reduce((ss,l)=>ss+(parseFloat(l.paymentsMade)||0),0);
+  },0);
+  const grandPending = BUDGET_SECTIONS.reduce((s,sec)=>{
+    const sec2=budgetLines[sec.id]||{};
+    return s+Object.values(sec2).reduce((ss,l)=>ss+(parseFloat(l.pendingPayments)||0),0);
+  },0);
+
+  const pending = Math.max(0,(client.budget||0)-(client.budgetPaid||0));
+  const pct = client.budget?Math.round((client.budgetPaid/client.budget)*100):0;
+
+  return (
+    <div className="fade">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}}>
+        <div>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px',letterSpacing:'0.04em'}}>Budget</h2>
+          <p style={{color:'#8A8A82',margin:0,fontSize:12}}>Financial overview — visible to team only, never to the couple.</p>
+        </div>
+        {isAdmin&&<Btn onClick={()=>{setTf({budget:client.budget||0,budgetPaid:client.budgetPaid||0});setEditTotals(true);}} outline style={{fontSize:11}}>Edit Totals</Btn>}
+      </div>
+
+      {/* Summary cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:14,marginBottom:20}}>
+        {[['Total Budget',client.budget,'#1C1C1C'],['Total Paid',client.budgetPaid,'#16a34a'],['Pending',pending,'#dc2626']].map(([l,v,col])=>(
+          <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'18px 16px',textAlign:'center'}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(18px,4vw,26px)',fontWeight:400,color:col}}>€{(v||0).toLocaleString('es-ES',{minimumFractionDigits:2})}</div>
+            <div style={{fontSize:11,color:'#8A8A82',marginTop:4}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress */}
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'14px 18px',marginBottom:20}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:7}}><span style={{fontSize:12,color:'#555'}}>Payment Progress</span><span style={{fontSize:12,fontWeight:600,color:pct>=100?'#16a34a':'#d97706'}}>{pct}%</span></div>
+        <div style={{background:'#F0F0EC',borderRadius:5,height:8,overflow:'hidden'}}><div style={{background:pct>=100?'#16a34a':'#1C1C1C',height:8,borderRadius:5,width:pct+'%',transition:'width 0.6s'}}/></div>
+      </div>
+
+      {/* Disclaimer */}
+      <div style={{background:'#fffbeb',borderRadius:8,border:'1px solid #fde68a',padding:'10px 14px',marginBottom:20,fontSize:11,color:'#92400e',lineHeight:1.5}}>
+        Please note that the prices in this budget are calculated on the quotes received from the different suppliers. Total costs will fluctuate depending on final choices and guest count.
+      </div>
+
+      {/* Budget sections — matching master doc */}
+      {BUDGET_SECTIONS.map(section=>{
+        const stotal = sectionTotal(section.id);
+        return(
+          <div key={section.id} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',marginBottom:18,overflow:'hidden'}}>
+            <div style={{background:'#1C1C1C',padding:'12px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#fff',letterSpacing:'0.04em'}}>{section.label}</span>
+              {stotal>0&&<span style={{fontSize:12,color:'#ccc'}}>€{stotal.toLocaleString('es-ES',{minimumFractionDigits:2})}</span>}
+            </div>
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,minWidth:700}}>
+                <thead>
+                  <tr style={{background:'#F8F8F6',borderBottom:'1px solid #E5E5E0'}}>
+                    {['Service','Vendor','Total Cost','Payment Details','Others','Payments Made','Pending Payments'].map(h=>(
+                      <th key={h} style={{padding:'8px 12px',textAlign:'left',fontSize:10,fontWeight:600,color:'#8A8A82',letterSpacing:'0.06em',textTransform:'uppercase',whiteSpace:'nowrap'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.lines.map((line,idx)=>{
+                    const d = getLine(section.id,line.key+idx);
+                    return(
+                      <tr key={line.key+idx} style={{borderBottom:'1px solid #F5F5F2'}}>
+                        <td style={{padding:'7px 12px',minWidth:140}}>
+                          {isAdmin
+                            ?<input style={{...I,fontSize:11,padding:'3px 6px',background:'transparent',border:'none',borderBottom:'1px solid #E5E5E0',borderRadius:0,fontWeight:500}} value={(budgetLines[section.id]||{})[line.key+idx]?.customLabel||line.label} onChange={e=>upLine(section.id,line.key+idx,'customLabel',e.target.value)} placeholder="Service name…"/>
+                            :<span style={{fontWeight:500,color:'#1C1C1C'}}>{(budgetLines[section.id]||{})[line.key+idx]?.customLabel||line.label||'—'}</span>}
+                        </td>
+                        {['vendor','totalCost','paymentDetails','others','paymentsMade','pendingPayments'].map(f=>(
+                          <td key={f} style={{padding:'6px 10px'}}>
+                            {isAdmin
+                              ?<input style={{...I,fontSize:11,padding:'3px 6px',width:f==='paymentDetails'||f==='others'?120:80}} value={d[f]||''} onChange={e=>upLine(section.id,line.key+idx,f,e.target.value)} placeholder={f==='totalCost'?'0.00':f==='paymentsMade'?'0.00':f==='pendingPayments'?'0.00':''}/>
+                              :<span style={{fontSize:11,color:'#1C1C1C'}}>{d[f]||'—'}</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                  <tr style={{background:'#F8F8F6',borderTop:'2px solid #E5E5E0'}}>
+                    <td colSpan={3} style={{padding:'8px 12px',fontWeight:600,fontSize:12,color:'#1C1C1C'}}>TOTAL {section.label.toUpperCase()}</td>
+                    <td colSpan={4} style={{padding:'8px 12px',fontWeight:600,fontSize:12,color:'#1C1C1C',textAlign:'right'}}>
+                      €{stotal.toLocaleString('es-ES',{minimumFractionDigits:2})}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Grand totals */}
+      <div style={{background:'#1C1C1C',borderRadius:10,padding:'16px 20px',display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,textAlign:'center'}}>
+        {[['TOTAL COST',grandTotal,'#fff'],['TOTAL PAID',grandPaid,'#4ADE80'],['TOTAL PENDING',grandPending,'#FCA5A5']].map(([l,v,col])=>(
+          <div key={l}>
+            <div style={{fontSize:10,color:'#888',letterSpacing:'0.1em',marginBottom:4}}>{l}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(16px,3vw,22px)',fontWeight:400,color:col}}>€{(v||0).toLocaleString('es-ES',{minimumFractionDigits:2})}</div>
+          </div>
+        ))}
+      </div>
+
+      {editTotals&&(
+        <Modal title="Edit Budget Totals" onClose={()=>setEditTotals(false)}>
+          <Field label="Total Budget (€)"><input type="number" style={{...I}} value={tf.budget} onChange={e=>setTf(p=>({...p,budget:parseFloat(e.target.value)||0}))}/></Field>
+          <Field label="Total Paid (€)" mt={12}><input type="number" style={{...I}} value={tf.budgetPaid} onChange={e=>setTf(p=>({...p,budgetPaid:parseFloat(e.target.value)||0}))}/></Field>
+          <div style={{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>setEditTotals(false)} outline>Cancel</Btn>
+            <Btn onClick={()=>{onUpdate({...client,budget:tf.budget,budgetPaid:tf.budgetPaid});setEditTotals(false);}}>Save</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// FAMILY TAB
+// ════════════════════════════════════════════════════════════════
+function FamilyTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd] = useState(null);
+  const [form,setForm]       = useState({name:'',relation:'',notes:''});
+  const add = side => {
+    onUpdate({...client,family:{...client.family,[side]:[...(client.family[side]||[]),{...form,id:'f'+Date.now()}]}});
+    setShowAdd(null); setForm({name:'',relation:'',notes:''});
+  };
+  return (
+    <div className="fade" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:20}}>
+      {['bride','groom'].map(side=>(
+        <div key={side}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+            <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#1C1C1C',margin:0}}>{side==='bride'?client.bride:client.groom}</h3>
+            {isAdmin&&<Btn onClick={()=>{setShowAdd(side);setForm({name:'',relation:'',notes:''}); }} style={{fontSize:11,padding:'5px 12px'}}>＋ Add</Btn>}
+          </div>
+          {(client.family[side]||[]).map(f=>(
+            <div key={f.id||f.name} style={{background:'#fff',borderRadius:8,border:'1px solid #E5E5E0',padding:'10px 14px',marginBottom:8,display:'flex',justifyContent:'space-between'}}>
+              <div>
+                <div style={{fontWeight:500,fontSize:13,color:'#1C1C1C'}}>{f.name}</div>
+                <div style={{fontSize:11,color:'#B5977A',marginTop:2}}>{f.relation}</div>
+                {f.notes&&<div style={{fontSize:11,color:'#8A8A82',marginTop:3,fontStyle:'italic'}}>{f.notes}</div>}
+              </div>
+              {isAdmin&&<button onClick={()=>{const u={...client.family,[side]:(client.family[side]||[]).filter(x=>x.id!==f.id)};onUpdate({...client,family:u});}} style={{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}}>✕</button>}
+            </div>
+          ))}
+        </div>
+      ))}
+      {showAdd&&(
+        <Modal title="Add Family Member" onClose={()=>setShowAdd(null)}>
+          <Field label="Name"><Inp val={form.name} onChange={v=>setForm(p=>({...p,name:v}))}/></Field>
+          <Field label="Relation" mt={10}><Inp val={form.relation} onChange={v=>setForm(p=>({...p,relation:v}))} placeholder="e.g. Mum, Brother…"/></Field>
+          <Field label="Notes / Role at wedding" mt={10}><textarea style={{...I,minHeight:50,resize:'vertical'}} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></Field>
+          <div style={{display:'flex',gap:10,marginTop:16,justifyContent:'flex-end'}}>
+            <Btn onClick={()=>setShowAdd(null)} outline>Cancel</Btn>
+            <Btn onClick={()=>add(showAdd)}>Add</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// INSPECTION TAB
+// ════════════════════════════════════════════════════════════════
+function InspectionTab({client,isAdmin,onUpdate}){
+  const ins = client.inspection||{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]};
+  const upIns = (k,v) => onUpdate({...client,inspection:{...ins,[k]:v}});
+  const addV  = () => onUpdate({...client,inspection:{...ins,visits:[...(ins.visits||[]),{id:'v'+Date.now(),type:'Venue Visit',date:'',time:'',venue:'',address:'',notes:''}]}});
+  const delV  = id => onUpdate({...client,inspection:{...ins,visits:(ins.visits||[]).filter(v=>v.id!==id)}});
+  const upV   = (id,k,v) => onUpdate({...client,inspection:{...ins,visits:(ins.visits||[]).map(x=>x.id===id?{...x,[k]:v}:x)}});
+
+  return (
+    <div className="fade">
+      <SectionH title="Inspection Visit" sub="Pre-wedding site visits and tastings."/>
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:16}}>
+        <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}}>Overview</h3>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>
+          {[['Inspection Dates','inspectionDates'],['Wedding Day','weddingDay'],['Who is Attending','whoAttending'],['Hotel','hotel']].map(([label,key])=>(
+            <div key={key}><Lbl t={label}/>{isAdmin?<Inp val={ins[key]||''} onChange={v=>upIns(key,v)}/>:<div style={{fontSize:13,color:'#1C1C1C',paddingTop:3,fontStyle:'italic'}}>{ins[key]||'—'}</div>}</div>
+          ))}
+        </div>
+      </div>
+      <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:0}}>Schedule</h3>
+          {isAdmin&&<Btn onClick={addV} style={{fontSize:11,padding:'5px 12px'}}>＋ Add Stop</Btn>}
+        </div>
+        {(ins.visits||[]).length===0&&<p style={{color:'#ccc',fontSize:12,textAlign:'center',padding:'16px 0'}}>No visits scheduled yet.</p>}
+        {(ins.visits||[]).map(v=>(
+          <div key={v.id} style={{background:'#F8F8F6',borderRadius:8,padding:'14px 16px',border:'1px solid #E5E5E0',marginBottom:10,position:'relative'}}>
+            {isAdmin?(
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                <div><Lbl t="Type"/><select style={{...I}} value={v.type} onChange={e=>upV(v.id,'type',e.target.value)}>{['Venue Visit','Menu Tasting','Hotel Visit','MUAH Trial','Florist Visit','Other'].map(t=><option key={t}>{t}</option>)}</select></div>
+                <div><Lbl t="Date & Time"/><div style={{display:'flex',gap:6}}><Inp val={v.date} onChange={x=>upV(v.id,'date',x)} placeholder="3 Jan"/><Inp val={v.time} onChange={x=>upV(v.id,'time',x)} placeholder="09:00" style={{width:72,flexShrink:0}}/></div></div>
+                <div><Lbl t="Venue / Location"/><Inp val={v.venue} onChange={x=>upV(v.id,'venue',x)}/></div>
+                <div><Lbl t="Maps Link"/><Inp val={v.address} onChange={x=>upV(v.id,'address',x)} placeholder="https://maps.google.com/…"/></div>
+                <div style={{gridColumn:'1/-1'}}><Lbl t="Notes"/><Inp val={v.notes} onChange={x=>upV(v.id,'notes',x)}/></div>
+                <button onClick={()=>delV(v.id)} style={{position:'absolute',top:10,right:10,background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}}>✕</button>
+              </div>
+            ):(
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:500,color:'#1C1C1C'}}>{v.type}</span>
+                  <span style={{fontSize:12,color:'#B5977A',fontWeight:500}}>{v.date}{v.time?' · '+v.time:''}</span>
+                </div>
+                {v.venue&&<div style={{fontSize:12,color:'#1C1C1C',fontWeight:500,marginBottom:3}}>{v.venue}</div>}
+                {v.address&&<a href={v.address.startsWith('http')?v.address:'#'} target="_blank" rel="noreferrer" style={{fontSize:11,color:'#B5977A',textDecoration:'none'}}>📍 View on Maps</a>}
+                {v.notes&&<div style={{fontSize:12,color:'#6A6A64',marginTop:5,fontStyle:'italic'}}>{v.notes}</div>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// NEW CLIENT MODAL
+// ════════════════════════════════════════════════════════════════
+function NewClientModal({admins,onClose,onSave}){
+  const [f,setF] = useState({bride:'',groom:'',date:'',venue:'',location:'',adults:'',budget:'',coupleUser:'',couplePass:'',leadId:''});
+  const set = (k,v) => setF(p=>({...p,[k]:v}));
+  const go = () => {
+    if(!f.bride||!f.groom||!f.date) return;
+    const slug = f.bride.toLowerCase()+f.groom.toLowerCase();
+    onSave({
+      id:slug+Date.now(),bride:f.bride,groom:f.groom,date:f.date,venue:f.venue,location:f.location,
+      guests:{adults:parseInt(f.adults)||0},budget:parseFloat(f.budget)||0,budgetPaid:0,
+      leadId:f.leadId||null,collaboratorIds:[],
+      coupleUser:f.coupleUser||slug,
+      couplePass:f.couplePass||(f.bride.slice(0,3).toLowerCase()+new Date(f.date).getFullYear()),
+      visibleTabs:['roadmap','vendors','design','moodboard','rundown'],
+      hiddenRoadmapIds:[],
+      style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'',linen:'',chairs:'',glassware:'',cutlery:'',centerpiece:'',notes:''},
+      designZones:{},moodboard:[],roadmap:JMB_ROADMAP_TEMPLATE.map((r,i)=>({...r,id:'r'+Date.now()+i})),vendors:[],
+      family:{bride:[],groom:[]},
+      rundown:{days:RUNDOWN_TEMPLATE.map(t=>({
+        id:'d'+Date.now()+Math.random().toString(36).slice(2),
+        label:t.label,
+        items:t.items.map((i,idx)=>({...i,id:'i'+Date.now()+idx+Math.random().toString(36).slice(2)}))
+      }))},setup:JSON.parse(JSON.stringify(SETUP_TEMPLATE)),
+      inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},
+      instagramHandles:{},
+      guestCounts:{},
+      budgetLines:{},
+    });
+  };
+  return (
+    <Modal title="New Client" onClose={onClose}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <Field label="Bride's Name"><Inp val={f.bride} onChange={v=>set('bride',v)}/></Field>
+        <Field label="Groom / Partner"><Inp val={f.groom} onChange={v=>set('groom',v)}/></Field>
+      </div>
+      <Field label="Wedding Date" mt={12}><Inp type="date" val={f.date} onChange={v=>set('date',v)}/></Field>
+      <Field label="Venue" mt={12}><Inp val={f.venue} onChange={v=>set('venue',v)}/></Field>
+      <Field label="Location" mt={12}><Inp val={f.location} onChange={v=>set('location',v)} placeholder="City, Country"/></Field>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}}>
+        <Field label="Guest Count"><Inp type="number" val={f.adults} onChange={v=>set('adults',v)}/></Field>
+        <Field label="Total Budget (€)"><Inp type="number" val={f.budget} onChange={v=>set('budget',v)}/></Field>
+      </div>
+      <Field label="Lead Planner" mt={12}>
+        <select style={{...I}} value={f.leadId} onChange={e=>set('leadId',e.target.value)}>
+          <option value="">— Assign later —</option>
+          {admins.map(a=><option key={a.id} value={a.id}>{a.name} ({a.role})</option>)}
+        </select>
+      </Field>
+      <div style={{background:'#F8F8F6',borderRadius:8,padding:14,marginTop:14,border:'1px solid #E5E5E0'}}>
+        <Lbl t="Couple Login"/>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:6}}>
+          <Field label="Username"><Inp val={f.coupleUser} onChange={v=>set('coupleUser',v.toLowerCase())} placeholder="e.g. caitlingus"/></Field>
+          <Field label="Password"><Inp val={f.couplePass} onChange={v=>set('couplePass',v)} placeholder="auto-generated if blank"/></Field>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}}>
+        <Btn onClick={onClose} outline>Cancel</Btn>
+        <Btn onClick={go}>Create Client</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Mount ────────────────────────────────────────────────────────────────────
+document.getElementById('loading') && (document.getElementById('loading').style.display='none');
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
