@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="theme-color" content="#FFFFFF"/>
+  <title>Just Married Barcelona</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&family=Great+Vibes&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Montserrat',sans-serif;background:#fff;color:#1C1C1C;min-height:100vh;-webkit-font-smoothing:antialiased}
+    #root{min-height:100vh}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:#E0DBD4;border-radius:3px}
+    .masonry{columns:3 200px;gap:14px}
+    .masonry-item{break-inside:avoid;margin-bottom:14px}
+    @media(max-width:640px){.masonry{columns:2 140px}.hide-sm{display:none!important}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    input,select,textarea,button{font-family:inherit}
+    input[type=color]{border:none;padding:0;cursor:pointer}
+  </style>
+</head>
+<body>
+<div id="root"><div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff"><div style="font-family:'Great Vibes',cursive;font-size:42px;color:#1C1C1C;margin-bottom:8px">Just Married</div><div style="font-size:10px;color:#aaa;letter-spacing:0.28em;text-transform:uppercase;margin-bottom:32px">Barcelona</div><div style="width:32px;height:32px;border:2px solid #eee;border-top-color:#1C1C1C;border-radius:50%;animation:spin 0.8s linear infinite"></div></div></div>
+<script>
+'use strict';
+const {useState,useEffect,useRef} = React;
+
+
+// ── Firebase Realtime Database ───────────────────────────────────────────────
+// Replace the config below with your Firebase project credentials
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBMqL0levZBF2uPOVuq5LfSiq7eLRUuU_c",
+  authDomain:        "jmbapp-72410.firebaseapp.com",
+  databaseURL:       "https://jmbapp-72410-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "jmbapp-72410",
+  storageBucket:     "jmbapp-72410.firebasestorage.app",
+  messagingSenderId: "170797034163",
+  appId:             "1:170797034163:web:efd8c5b5bc2fd3bd13dec6",
+};
+
+// Initialize Firebase
+firebase.initializeApp(FIREBASE_CONFIG);
+const firebaseDB = firebase.database();
+
+// db — reads/writes to Firebase, falls back to localStorage while offline
+const db = {
+  get: async (k) => {
+    try {
+      const snap = await firebaseDB.ref('jmb/' + k).once('value');
+      return snap.val();
+    } catch(e) {
+      try { const v = localStorage.getItem('jmb_'+k); return v ? JSON.parse(v) : null; } catch(e2){ return null; }
+    }
+  },
+  set: async (k, v) => {
+    try {
+      await firebaseDB.ref('jmb/' + k).set(v);
+      try { localStorage.setItem('jmb_'+k, JSON.stringify(v)); } catch(e){}
+    } catch(e) {
+      try { localStorage.setItem('jmb_'+k, JSON.stringify(v)); } catch(e2){}
+    }
+  },
+  // Real-time listener — calls callback whenever data changes
+  listen: (k, callback) => {
+    firebaseDB.ref('jmb/' + k).on('value', snap => callback(snap.val()));
+    return () => firebaseDB.ref('jmb/' + k).off();
+  },
+};
+
+// ── Default data ─────────────────────────────────────────────────────────────
+const DEF_ADMINS = [
+  {id:'a1',username:'admin', password:'justmarried',name:'JMB Admin',role:'owner'},
+  {id:'a2',username:'anna',  password:'jmb2025',    name:'Anna',     role:'planner'},
+  {id:'a3',username:'judit', password:'jmb2025',    name:'Judit',    role:'planner'},
+];
+
+const DEF_CLIENT = {
+  id:'caitlin-gus',bride:'Caitlin',groom:'Gus',
+  date:'2025-08-16',venue:'Xalet del Nin',location:'Vilanova i la Geltrú, Barcelona',
+  guests:{adults:77,children:2},budget:117079.23,budgetPaid:109696.24,
+  leadId:'a2',collaboratorIds:['a3'],
+  coupleUser:'caitlingus',couplePass:'xalet2025',
+  visibleTabs:['roadmap','vendors','design','moodboard','rundown'],
+  hiddenRoadmapIds:[],
+  style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'Elevated Dinner Party · Elegant · Sophisticated · Classic with Modern Twist',linen:'White Albero Tablecloth · White Napkin',chairs:'Tiffany Chair',glassware:'Power Glassware',cutlery:'Picasso Cutlery',centerpiece:'Florals, Silver Dishes & Candles. No fruit, no pearls.',notes:'2 Long Tables + Top Table. Cava Tower upon entrance.'},
+  designZones:{},
+  moodboard:[],
+  roadmap:[
+    {id:'r1',category:'Venue',        item:'Xalet del Nin',               status:'confirmed',  notes:'Down payment paid Dec.',dueDate:'2025-08-11',adminOnly:false},
+    {id:'r2',category:'Catering',     item:'Sensacions',                  status:'confirmed',  notes:'Last payment pending.',  dueDate:'2025-08-16',adminOnly:false},
+    {id:'r3',category:'Florals',      item:'Flors Amelia',                status:'confirmed',  notes:'€2,000 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r4',category:'Photo',        item:'Lara Onac Team',              status:'confirmed',  notes:'Next payment 2nd Aug.',  dueDate:'2025-08-02',adminOnly:false},
+    {id:'r5',category:'MUAH',         item:'Teresa Snowball',             status:'confirmed',  notes:'Paid in full.',          dueDate:'2025-08-10',adminOnly:false},
+    {id:'r6',category:'Transport',    item:'Dotor – Bus',                 status:'confirmed',  notes:'Last payment July 16th.',dueDate:'2025-07-16',adminOnly:false},
+    {id:'r7',category:'Live Music',   item:'Emilio – Guitar',             status:'confirmed',  notes:'Due wedding day.',       dueDate:'2025-08-16',adminOnly:false},
+    {id:'r8',category:'Live Music',   item:'Tu Musica Events',            status:'confirmed',  notes:'€1,300 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r9',category:'DJ',           item:'Suit & Music',                status:'confirmed',  notes:'€675 pending.',          dueDate:'2025-08-16',adminOnly:false},
+    {id:'r10',category:'AV',          item:'Raich',                       status:'confirmed',  notes:'€3,960 pending.',        dueDate:'2025-08-16',adminOnly:false},
+    {id:'r11',category:'Officiant',   item:'Ludo – MC',                   status:'confirmed',  notes:'€300 pending.',          dueDate:'2025-08-16',adminOnly:false},
+    {id:'r12',category:'Stationery',  item:'Menus, seating plan',         status:'in-progress',notes:'Pending confirmation.',  dueDate:'2025-07-01',adminOnly:false},
+    {id:'r13',category:'Transport',   item:'Driverlux – Airport transfer',status:'confirmed',  notes:'Paid in full.',          dueDate:'2025-08-18',adminOnly:false},
+    {id:'r14',category:'Welcome',     item:'El Vivero Sitges',            status:'confirmed',  notes:'Rest before wedding.',   dueDate:'2025-08-14',adminOnly:false},
+    {id:'r15',category:'Deposit',     item:'Xalet del Nin – Refundable €1,500',status:'pending',notes:'Pay August 10th.',     dueDate:'2025-08-10',adminOnly:true},
+  ],
+  vendors:[
+    {id:'v1', cat:'Venue',        name:'Xalet del Nin',   social:'https://instagram.com/xaletdelnin',             sType:'instagram',phone:'628.558.678', contact:'',              notes:'Wedding & Pool Party',confirmed:true, adminOnly:false,docs:[]},
+    {id:'v2', cat:'Welcome',      name:'El Vivero',        social:'https://instagram.com/vivero_beach_club_sitges', sType:'instagram',phone:'638.405.277', contact:'',              notes:'Welcome event',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v3', cat:'Catering',     name:'Sensacions',       social:'https://instagram.com/sensacionsbarcelona',      sType:'instagram',phone:'',           contact:'Maria 685803291',notes:'All catering',         confirmed:true, adminOnly:false,docs:[]},
+    {id:'v4', cat:'Florals',      name:'Flors Amelia',     social:'https://instagram.com/florsamelia',              sType:'instagram',phone:'',           contact:'Guillem 656392656',notes:'Full floral & decor',confirmed:true, adminOnly:false,docs:[]},
+    {id:'v5', cat:'Photo',        name:'Lara Onac Team',   social:'https://instagram.com/laraonac',                 sType:'instagram',phone:'',           contact:'',              notes:'Photo + video',        confirmed:true, adminOnly:false,docs:[]},
+    {id:'v6', cat:'AV',           name:'Raich',            social:'https://instagram.com/raich_av',                 sType:'instagram',phone:'',           contact:'Anna 692021442',notes:'Sound & lighting',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v7', cat:'Live Music',   name:'Emilio',           social:'',                                               sType:'instagram',phone:'722331695',  contact:'',              notes:'Spanish guitar',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v8', cat:'Live Music',   name:'Tu Musica Events', social:'https://instagram.com/tumusicaevents',           sType:'instagram',phone:'660192558',  contact:'',              notes:'Party band',           confirmed:true, adminOnly:false,docs:[]},
+    {id:'v9', cat:'DJ',           name:'Suit & Music',     social:'',                                               sType:'instagram',phone:'',           contact:'Ivan',          notes:'DJ',                   confirmed:true, adminOnly:false,docs:[]},
+    {id:'v10',cat:'MUAH',         name:'Teresa Snowball',  social:'https://instagram.com/teresasnowball_co',        sType:'instagram',phone:'627.638.763',contact:'',              notes:'Bride + 4 ladies',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v11',cat:'Officiant',    name:'Ludo',             social:'https://instagram.com/ludotalks',                sType:'instagram',phone:'678 540 799', contact:'',             notes:'Officiant & MC',       confirmed:true, adminOnly:false,docs:[]},
+    {id:'v12',cat:'Transport',    name:'Dotor',            social:'',                                               sType:'instagram',phone:'938.180.611',contact:'',              notes:'Bus Sitges-Xalet',     confirmed:true, adminOnly:false,docs:[]},
+    {id:'v13',cat:'Transport',    name:'Driverlux',        social:'',                                               sType:'instagram',phone:'',           contact:'',              notes:'Mini vans + airport',  confirmed:true, adminOnly:false,docs:[]},
+  ],
+  family:{bride:[
+    {id:'b1',name:'Julie',relation:'Mum',notes:'Toast at dinner'},
+    {id:'b2',name:'Ken',  relation:'Dad',notes:'Father of bride speech'},
+    {id:'b3',name:'Erin', relation:'Sister',notes:'Reading 2. H&MK'},
+    {id:'b4',name:'Tom',  relation:"Sister's partner",notes:'Reading 1'},
+  ],groom:[
+    {id:'g1',name:'Helen', relation:'Mum',notes:'Toast at dinner'},
+    {id:'g2',name:'Tom',   relation:'Dad',notes:''},
+    {id:'g3',name:'Bella', relation:'Sister',notes:'H&MK. Walks in ceremony'},
+    {id:'g4',name:'Bibi, Bo, Zebi, Wilfred',relation:"Sister's kids",notes:'Ring bearers'},
+    {id:'g5',name:'Will',  relation:'Brother',notes:''},
+  ]},
+  rundown:{days:[]},
+  setup:JSON.parse(JSON.stringify(SETUP_TEMPLATE)),
+  inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},
+  instagramHandles:{},
+      guestCounts:{},
+      budgetLines:{},
+};
+
+
+// ── JMB Default Roadmap Template (pre-loaded for every new couple) ───────────
+const JMB_ROADMAP_TEMPLATE = [
+  // VENUE & ACCOMMODATION
+  {category:'Venue',        item:'Wedding Venue',                    status:'waiting', notes:'Confirm availability for wedding date. Request proposal & contract.',       adminOnly:false},
+  {category:'Venue',        item:'Welcome Event Venue',              status:'waiting', notes:'Confirm availability. Request proposal.',                                   adminOnly:false},
+  {category:'Venue',        item:'Post-Wedding / Pool Party Venue',  status:'waiting', notes:'Confirm availability. Request proposal.',                                   adminOnly:false},
+  {category:'Venue',        item:'Hotel for wedding party',          status:'waiting', notes:'Block rooms. Confirm check-in / check-out dates.',                          adminOnly:false},
+  {category:'Venue',        item:'Hotel for guests (recommended)',   status:'waiting', notes:'Send recommendations with discount code if possible.',                      adminOnly:false},
+  // CATERING
+  {category:'Catering',     item:'Catering Company',                 status:'waiting', notes:'Request proposals for welcome dinner + wedding day + pool party menus.',    adminOnly:false},
+  {category:'Catering',     item:'Menu Tasting',                     status:'waiting', notes:'Schedule tasting during inspection visit. Confirm final menu selection.',   adminOnly:false},
+  {category:'Catering',     item:'Wedding Cake / Dessert Table',     status:'waiting', notes:'Confirm if needed or if caterer includes.',                                  adminOnly:false},
+  // FLORALS & DECOR
+  {category:'Florals',      item:'Floral Design & Decor',            status:'waiting', notes:'Request proposals. Send mood board + colour palette.',                      adminOnly:false},
+  {category:'Florals',      item:'Decor Rentals (furniture, etc.)',  status:'waiting', notes:'Confirm what caterer/venue provides. Request extras if needed.',            adminOnly:false},
+  {category:'Florals',      item:'Stationery & Signage',             status:'waiting', notes:'Menus, seating plan, name cards, welcome sign, table numbers.',             adminOnly:false},
+  // PHOTO & VIDEO
+  {category:'Photo & Video',item:'Photographer',                     status:'waiting', notes:'Request proposals. Confirm hours of coverage + package.',                  adminOnly:false},
+  {category:'Photo & Video',item:'Videographer',                     status:'waiting', notes:'Request proposals. Confirm highlight film + full video.',                   adminOnly:false},
+  {category:'Photo & Video',item:'Photo Booth / Content Creator',    status:'waiting', notes:'Confirm if couple wants. Request proposals.',                               adminOnly:false},
+  // MUSIC & ENTERTAINMENT
+  {category:'AV & Lighting',item:'AV & Lighting Company',            status:'waiting', notes:'Confirm ceremony sound, dinner playlist, dance lighting.',                  adminOnly:false},
+  {category:'DJ',           item:'DJ',                               status:'waiting', notes:'Request proposals. Confirm hours + setlist preferences.',                   adminOnly:false},
+  {category:'Live Music',   item:'Ceremony Live Music',              status:'waiting', notes:'Guitar / string quartet / other. Confirm songs list.',                      adminOnly:false},
+  {category:'Live Music',   item:'Cocktail Live Music',              status:'waiting', notes:'Confirm artist + setlist.',                                                  adminOnly:false},
+  {category:'Live Music',   item:'Dinner / Party Band',              status:'waiting', notes:'Request proposals. Confirm sets + rider.',                                  adminOnly:false},
+  // BEAUTY
+  {category:'MUAH',         item:'Bridal MUAH (Hair & Makeup)',      status:'waiting', notes:'Book trial. Confirm services for bride + wedding party.',                   adminOnly:false},
+  {category:'MUAH',         item:'MUAH Trial',                       status:'waiting', notes:'Schedule close to wedding date. Confirm look + timing.',                   adminOnly:false},
+  // OFFICIANT
+  {category:'Officiant',    item:'Officiant / MC',                   status:'waiting', notes:'Confirm ceremony type (civil / symbolic). Share vow guidelines.',          adminOnly:false},
+  // TRANSPORT
+  {category:'Transport',    item:'Guest Transport (bus/minivans)',    status:'waiting', notes:'Confirm pickup points + drop-off. Hotels ↔ Venue.',                        adminOnly:false},
+  {category:'Transport',    item:'Wedding Party Transport',          status:'waiting', notes:'Confirm car / minivan for bride & party on wedding day.',                  adminOnly:false},
+  {category:'Transport',    item:'Airport Transfer (couple)',        status:'waiting', notes:'Confirm pickup for honeymoon departure.',                                   adminOnly:false},
+  // PAPERWORK & LEGAL
+  {category:'Legal',        item:'Marriage License / Legal Documents',status:'waiting',notes:'Confirm legal requirements in Spain. Apostille, translations if needed.',  adminOnly:true},
+  {category:'Legal',        item:'Civil Registry Appointment',       status:'waiting', notes:'Book appointment at local registry if civil ceremony.',                     adminOnly:true},
+  // PLANNING MILESTONES
+  {category:'Planning',     item:'Save the Date sent',               status:'waiting', notes:'Recommended 12+ months before wedding.',                                   adminOnly:false},
+  {category:'Planning',     item:'Invitations sent',                 status:'waiting', notes:'Recommended 3–4 months before. Include RSVP deadline.',                   adminOnly:false},
+  {category:'Planning',     item:'Guest list & RSVPs confirmed',     status:'waiting', notes:'Final headcount needed for catering + seating plan.',                      adminOnly:false},
+  {category:'Planning',     item:'Dietary requirements collected',   status:'waiting', notes:'Send to caterer with final headcount.',                                     adminOnly:false},
+  {category:'Planning',     item:'Seating plan finalised',           status:'waiting', notes:'Complete once all RSVPs confirmed.',                                        adminOnly:false},
+  {category:'Planning',     item:'Final rundown shared with vendors',status:'waiting', notes:'Send 2 weeks before wedding. Confirm all timings.',                        adminOnly:false},
+  // INSPECTION VISIT
+  {category:'Inspection',   item:'Inspection visit booked',          status:'waiting', notes:'Venue + menu tasting + MUAH trial. Ideally 3–6 months before.',           adminOnly:false},
+  {category:'Inspection',   item:'Menu tasting confirmed',           status:'waiting', notes:'During inspection visit.',                                                  adminOnly:false},
+  {category:'Inspection',   item:'MUAH trial confirmed',             status:'waiting', notes:'Can be done during inspection visit or closer to date.',                   adminOnly:false},
+  // EXTRAS
+  {category:'Extras',       item:'Welcome bags / favours',           status:'waiting', notes:'Confirm if couple wants. Agree on contents + budget.',                     adminOnly:false},
+  {category:'Extras',       item:'Fireworks / Special effects',      status:'waiting', notes:'Confirm with venue if permitted. Request quotes.',                         adminOnly:false},
+  {category:'Extras',       item:'Flip flops / Late night snacks',   status:'waiting', notes:'Confirm logistics with caterer / JMB.',                                    adminOnly:false},
+  {category:'Extras',       item:'Honeymoon transfer / logistics',   status:'waiting', notes:'Confirm departure date, airport, flight details.',                         adminOnly:false},
+  // PAYMENTS & ADMIN
+  {category:'Budget',       item:'Damage deposit organised',         status:'waiting', notes:'Check venue deposit amount and due date.',                                  adminOnly:true},
+  {category:'Budget',       item:'All contracts signed',             status:'waiting', notes:'Venue, caterer, florals, photo, video, AV, transport.',                    adminOnly:true},
+  {category:'Budget',       item:'All vendors paid in full',         status:'waiting', notes:'Confirm before wedding day.',                                               adminOnly:true},
+];
+
+
+// ── JMB Setup Template — vendor arrival order from master doc ────────────────
+const SETUP_TEMPLATE = {
+  vendorArrivals:[
+    {id:'sa1',time:'',vendor:'MUAH',         notes:''},
+    {id:'sa2',time:'',vendor:'JMB',          notes:''},
+    {id:'sa3',time:'',vendor:'Caterer',      notes:''},
+    {id:'sa4',time:'',vendor:'Florist',      notes:''},
+    {id:'sa5',time:'',vendor:'Stationery',   notes:''},
+    {id:'sa6',time:'',vendor:'AV',           notes:''},
+    {id:'sa7',time:'',vendor:'DJ',           notes:''},
+    {id:'sa8',time:'',vendor:'Live Music',   notes:''},
+    {id:'sa9',time:'',vendor:'Photo',        notes:''},
+    {id:'sa10',time:'',vendor:'Video',       notes:''},
+    {id:'sa11',time:'',vendor:'Content Creator',notes:''},
+    {id:'sa12',time:'',vendor:'Photo Booth', notes:''},
+    {id:'sa13',time:'',vendor:'Entertainment',notes:''},
+    {id:'sa14',time:'',vendor:'Fireworks',   notes:''},
+  ],
+  areas:[],
+};
+
+
+// ── Budget line items from JMB Master document ───────────────────────────────
+const BUDGET_SECTIONS = [
+  {id:'welcome', label:'Welcome / Rehearsal Dinner', lines:[
+    {key:'venue',     label:'Venue'},
+    {key:'caterer',   label:'Caterer'},
+    {key:'photo',     label:'Photo'},
+    {key:'video',     label:'Video'},
+    {key:'extra1',    label:''},
+    {key:'extra2',    label:''},
+    {key:'extra3',    label:''},
+  ]},
+  {id:'wedding', label:'Wedding Day', lines:[
+    {key:'venue',         label:'Venue'},
+    {key:'caterer',       label:'Caterer'},
+    {key:'rentals',       label:'Rentals'},
+    {key:'floralDecor',   label:'Floral Decor'},
+    {key:'stationery',    label:'Stationery & Signage'},
+    {key:'av',            label:'AV'},
+    {key:'dj',            label:'DJ'},
+    {key:'liveMusic1',    label:'Live Music'},
+    {key:'liveMusic2',    label:'Live Music 2'},
+    {key:'photo',         label:'Photo'},
+    {key:'video',         label:'Video'},
+    {key:'photoBooth',    label:'Photo Booth'},
+    {key:'contentCreator',label:'Content Creator'},
+    {key:'transportGuests',label:'Transport Guests'},
+    {key:'transportParty', label:'Transport Wedding Party'},
+    {key:'welcomeBags',   label:'Welcome Bags / Favours / Gifts'},
+    {key:'extra1',        label:''},
+    {key:'extra2',        label:''},
+    {key:'extra3',        label:''},
+    {key:'extra4',        label:''},
+    {key:'extra5',        label:''},
+  ]},
+  {id:'postWedding', label:'Post Wedding / Day 2', lines:[
+    {key:'venue',     label:'Venue'},
+    {key:'caterer',   label:'Caterer'},
+    {key:'photo',     label:'Photo'},
+    {key:'video',     label:'Video'},
+    {key:'decor',     label:'Decor'},
+    {key:'extra1',    label:''},
+  ]},
+  {id:'other', label:'Other Vendors & Extras', lines:[
+    {key:'weddingPlanner', label:'Wedding Planner'},
+    {key:'extra1',         label:''},
+    {key:'extra2',         label:''},
+  ]},
+];
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const STATUS = {
+  confirmed:    {label:'Confirmed',     color:'#16a34a',bg:'#f0fdf4',border:'#86efac'},
+  'in-progress':{label:'In Progress',  color:'#d97706',bg:'#fffbeb',border:'#fcd34d'},
+  pending:      {label:'Pending',       color:'#dc2626',bg:'#fef2f2',border:'#fca5a5'},
+  waiting:      {label:'Awaiting Quote',color:'#7c3aed',bg:'#f5f3ff',border:'#c4b5fd'},
+};
+
+const VCATS = ['Venue','Welcome','Catering','Florals','Photo','AV','Live Music','DJ','MUAH','Officiant','Transport','Other'];
+const RCATS = ['Venue','Catering','Florals','Photo','MUAH','Transport','Live Music','DJ','AV','Officiant','Stationery','Welcome','Deposit','Other'];
+const STYPES = ['instagram','facebook','website','tiktok'];
+
+const ADMIN_TABS = [
+  {id:'roadmap',  label:'Roadmap'},
+  {id:'vendors',  label:'Vendors'},
+  {id:'setup',    label:'Setup'},
+  {id:'rundown',  label:'Run Down'},
+  {id:'design',   label:'Design'},
+  {id:'moodboard',label:'Mood Board'},
+  {id:'budget',   label:'Budget'},
+  {id:'family',   label:'Family'},
+  {id:'inspection',label:'Inspection'},
+];
+const COUPLE_TABS = ['roadmap','vendors','design','moodboard','rundown'];
+
+const JMB_LIBRARY = [
+  {name:'Xalet del Nin',   cat:'Venue',      social:'https://instagram.com/xaletdelnin',            sType:'instagram',phone:'628.558.678',contact:''},
+  {name:'El Vivero',        cat:'Welcome',    social:'https://instagram.com/vivero_beach_club_sitges',sType:'instagram',phone:'638.405.277',contact:''},
+  {name:'Sensacions',       cat:'Catering',   social:'https://instagram.com/sensacionsbarcelona',    sType:'instagram',phone:'',          contact:'Maria 685803291'},
+  {name:'Flors Amelia',     cat:'Florals',    social:'https://instagram.com/florsamelia',            sType:'instagram',phone:'',          contact:'Guillem 656392656'},
+  {name:'Lara Onac Team',   cat:'Photo',      social:'https://instagram.com/laraonac',               sType:'instagram',phone:'',          contact:''},
+  {name:'Raich',            cat:'AV',         social:'https://instagram.com/raich_av',               sType:'instagram',phone:'',          contact:'Anna 692021442'},
+  {name:'Teresa Snowball',  cat:'MUAH',       social:'https://instagram.com/teresasnowball_co',      sType:'instagram',phone:'627.638.763',contact:''},
+  {name:'Ludo',             cat:'Officiant',  social:'https://instagram.com/ludotalks',              sType:'instagram',phone:'678 540 799',contact:''},
+  {name:'Tu Musica Events', cat:'Live Music', social:'https://instagram.com/tumusicaevents',         sType:'instagram',phone:'660192558', contact:''},
+  {name:'Emilio',           cat:'Live Music', social:'',                                              sType:'instagram',phone:'722331695', contact:''},
+  {name:'Suit & Music',     cat:'DJ',         social:'',                                              sType:'instagram',phone:'',          contact:'Ivan'},
+  {name:'Dotor',            cat:'Transport',  social:'',                                              sType:'instagram',phone:'938.180.611',contact:''},
+  {name:'Driverlux',        cat:'Transport',  social:'',                                              sType:'instagram',phone:'',          contact:''},
+];
+
+const RUNDOWN_TEMPLATE = [
+  {
+    label:'DAY 1 · Welcome Event / Rehearsal',
+    items:[
+      {time:'',who:'',           action:'── ARRIVAL @ WELCOME EVENT / REHEARSAL ──'},
+      {time:'',who:'',           action:'WELCOME EVENT / REHEARSAL @'},
+      {time:'',who:'Bride + Girls', action:'START GETTING READY'},
+    ]
+  },
+  {
+    label:'DAY 2 · Wedding Day',
+    items:[
+      {time:'',who:'',              action:'── TEAM ONE'S MORNING ──'},
+      {time:'',who:'Bride + Girls', action:'START GETTING READY'},
+      {time:'',who:'Bride',         action:'GETS DRESSED'},
+      {time:'',who:'',              action:'── TEAM TWO'S MORNING ──'},
+      {time:'',who:'Groom + Boys',  action:'START GETTING READY'},
+      {time:'',who:'',              action:'── GUESTS TRANSPORT TO VENUE ──'},
+      {time:'',who:'Bus',           action:'PRESENTATION → DEPARTURE'},
+      {time:'',who:'',              action:'── WELCOME ──'},
+      {time:'',who:'Guests',        action:'ARRIVE AT VENUE'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO CEREMONY + help with reserved seats'},
+      {time:'',who:'',              action:'── CEREMONY ──'},
+      {time:'',who:'Song 1',        action:'ENTRANCE TO CEREMONY'},
+      {time:'',who:'Song 2',        action:''},
+      {time:'',who:'Song 3',        action:''},
+      {time:'',who:'',              action:'EXCHANGE VOWS'},
+      {time:'',who:'',              action:'EXCHANGE RINGS'},
+      {time:'',who:'Song',          action:'RECESSION · PETAL TOSS'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO COCKTAIL PARTY'},
+      {time:'',who:'',              action:'── COCKTAIL PARTY ──'},
+      {time:'',who:'All',           action:'GROUP PHOTOS'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO RECEPTION'},
+      {time:'',who:'',              action:'── RECEPTION ──'},
+      {time:'',who:'Guests',        action:'ENTER DINNER HALL · TAKE SEATS'},
+      {time:'',who:'',              action:'ENTRANCE TO DINNER'},
+      {time:'',who:'',              action:'SPEECH 1'},
+      {time:'',who:'Caterer',       action:'SERVES STARTER + MAIN'},
+      {time:'',who:'',              action:'SPEECH 2'},
+      {time:'',who:'Caterer',       action:'SERVES DESSERT / CAKE'},
+      {time:'',who:'JMB',           action:'USHER GUESTS TO DANCE'},
+      {time:'',who:'',              action:'── DANCE ──'},
+      {time:'',who:'All',           action:'DANCE STARTS'},
+      {time:'',who:'',              action:'MIDNIGHT SNACKS'},
+      {time:'',who:'',              action:'FIRST BUS BACK'},
+      {time:'',who:'All',           action:'END OF PARTY'},
+      {time:'',who:'',              action:'BUS BACK'},
+    ]
+  },
+  {
+    label:'DAY 3 · Day 2 / Post Wedding',
+    items:[
+      {time:'',who:'',action:'DAY 2'},
+    ]
+  },
+];
+
+
+const DESIGN_ZONES = [
+  {id:'welcome',  label:'Welcome',   icon:'🌿'},
+  {id:'ceremony', label:'Ceremony',  icon:'💐'},
+  {id:'cocktail', label:'Cocktail',  icon:'🥂'},
+  {id:'dinner',   label:'Dinner',    icon:'🕯️'},
+  {id:'dance',    label:'Dance',     icon:'✨'},
+  {id:'day2',     label:'Day 2',     icon:'🌊'},
+];
+// Fields per zone — mapped exactly from JMB Master Planner document
+const ZONE_FIELDS = {
+  welcome:[
+    {key:'drinksStation', label:'Drinks Station'},
+    {key:'welcomeSign',   label:'Welcome Sign'},
+    {key:'fans',          label:'Fans'},
+    {key:'parasols',      label:'Parasols'},
+    {key:'cardBox',       label:'Card Box'},
+    {key:'decor',         label:'Other Decor'},
+  ],
+  ceremony:[
+    {key:'backdrop',       label:'Backdrop'},
+    {key:'aisle',          label:'Aisle'},
+    {key:'entrance',       label:'Entrance to Ceremony'},
+    {key:'petals',         label:'Petals'},
+    {key:'chairs',         label:'Chairs'},
+    {key:'vowBooklets',    label:'Vow Booklets'},
+    {key:'ceremonyBooklets',label:'Ceremony Booklets'},
+    {key:'ringBox',        label:'Ring Box'},
+  ],
+  cocktail:[
+    {key:'cocktailTables', label:'Cocktail Tables'},
+    {key:'tablecloths',    label:'Table Cloths'},
+    {key:'chairs',         label:'Chairs'},
+    {key:'menuCards',      label:'Menu Cards'},
+    {key:'buffets',        label:'Buffets'},
+    {key:'buffetSignage',  label:'Buffet Signage'},
+    {key:'bars',           label:'Bars'},
+    {key:'barSignage',     label:'Bar Signage'},
+    {key:'selfieMirror',   label:'Selfie Mirror / Photo Booth / Photo Call'},
+    {key:'lighting',       label:'Lighting'},
+    {key:'toiletryBaskets',label:'Toiletry Baskets'},
+  ],
+  dinner:[
+    {key:'topTable',       label:'Top Table (Round / Long) — Pax?'},
+    {key:'topTableDecor',  label:'Top Table Decor'},
+    {key:'tables',         label:'Tables (Round / Long)'},
+    {key:'tablesDecor',    label:'Tables Decor'},
+    {key:'tablecloth',     label:'Table Cloth'},
+    {key:'seatingPlan',    label:'Seating Plan'},
+    {key:'menuCards',      label:'Menu Cards'},
+    {key:'namePlacement',  label:'Name Placement'},
+    {key:'tableNumbers',   label:'Table Numbers / Names'},
+    {key:'floralsTable',   label:'Florals Tables'},
+    {key:'candles',        label:'Candles'},
+    {key:'floralsCeiling', label:'Florals Ceiling'},
+    {key:'lighting',       label:'Lighting'},
+    {key:'chandeliers',    label:'Chandeliers'},
+    {key:'garlands',       label:'Garlands'},
+  ],
+  dance:[
+    {key:'djBooth',        label:'DJ Booth'},
+    {key:'lights',         label:'Lights'},
+    {key:'smokeMachine',   label:'Smoke Machine'},
+    {key:'decor',          label:'Decor'},
+    {key:'hangingDecor',   label:'Hanging Decor'},
+    {key:'barDecor',       label:'Bar Decor'},
+    {key:'signage',        label:'Signage'},
+    {key:'cocktails',      label:'Cocktails'},
+    {key:'premiumLicors',  label:'Premium Licors'},
+    {key:'flipFlops',      label:'Flip Flops'},
+  ],
+  day2:[
+    {key:'venue',          label:'Venue'},
+    {key:'caterer',        label:'Caterer'},
+    {key:'decor',          label:'Decor'},
+    {key:'photo',          label:'Photo'},
+    {key:'video',          label:'Video'},
+    {key:'transport',      label:'Transport'},
+  ],
+};
+
+const ROLE_BADGE = {
+  owner:  {label:'Owner',  bg:'#fdf4ff',color:'#9333ea',border:'#e9d5ff'},
+  planner:{label:'Planner',bg:'#f0fdf4',color:'#16a34a',border:'#86efac'},
+};
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+const I = {width:'100%',padding:'9px 12px',border:'1.5px solid #E5E5E0',borderRadius:6,fontSize:13,fontFamily:'inherit',boxSizing:'border-box',outline:'none',color:'#1C1C1C',background:'#fff'};
+const L = {display:'block',fontSize:10,fontWeight:600,color:'#8A8A82',marginBottom:5,letterSpacing:'0.1em',textTransform:'uppercase'};
+const BG = {background:'#1C1C1C',color:'#fff',border:'none',borderRadius:6,padding:'9px 20px',cursor:'pointer',fontWeight:500,fontSize:12,fontFamily:'inherit',letterSpacing:'0.08em'};
+const BO = {background:'none',color:'#1C1C1C',border:'1.5px solid #DEDED8',borderRadius:6,padding:'8px 18px',cursor:'pointer',fontSize:12,fontFamily:'inherit'};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── STYLES ────────────────────────────────────────────────────────────────────
+const I={width:'100%',padding:'9px 12px',border:'1.5px solid #E5E5E0',borderRadius:6,fontSize:13,fontFamily:'inherit',boxSizing:'border-box',outline:'none',color:'#1C1C1C',background:'#fff'};
+const L={display:'block',fontSize:10,fontWeight:600,color:'#8A8A82',marginBottom:5,letterSpacing:'0.1em',textTransform:'uppercase'};
+const BG={background:'#1C1C1C',color:'#fff',border:'none',borderRadius:6,padding:'9px 20px',cursor:'pointer',fontWeight:500,fontSize:12,fontFamily:'inherit',letterSpacing:'0.08em'};
+const BO={background:'none',color:'#1C1C1C',border:'1.5px solid #DEDED8',borderRadius:6,padding:'8px 18px',cursor:'pointer',fontSize:12,fontFamily:'inherit'};
+
+// ── SMALL HELPERS ─────────────────────────────────────────────────────────────
+const h=React.createElement;
+function Field({label,children,mt}){return h('div',{style:{marginTop:mt||0}},h('label',{style:L},label),children);}
+function SH({title,sub,action}){return h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}},h('div',null,h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px'}},title),sub&&h('p',{style:{color:'#8A8A82',margin:0,fontSize:12}},sub)),action);}
+function Avatar({name,size}){size=size||32;const lts=name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();const hue=name.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%360;return h('div',{style:{width:size,height:size,borderRadius:'50%',background:'hsl('+hue+',25%,45%)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.36,fontWeight:600,color:'#fff',flexShrink:0}},lts);}
+function Logo({size}){return h('span',{style:{fontFamily:"'Great Vibes',cursive",fontSize:size||24,color:'#1C1C1C',lineHeight:1}},'Just Married');}
+function SocialBtn({social,sType}){if(!social)return null;const icons={instagram:'📸',facebook:'👍',website:'🌐',tiktok:'🎵'};const url=social.startsWith('http')?social:'https://instagram.com/'+social.replace('@','');return h('a',{href:url,target:'_blank',rel:'noreferrer',style:{display:'inline-flex',alignItems:'center',gap:4,fontSize:12,color:'#6B6B64',textDecoration:'none',background:'#F5F5F2',padding:'3px 10px',borderRadius:16,border:'1px solid #E5E5E0'}},h('span',null,icons[sType]||'🔗'),h('span',{style:{textTransform:'capitalize'}},sType));}
+function TabBar({tabs,active,onChange}){return h('div',{style:{background:'#fff',borderBottom:'1px solid #E5E5E0',overflowX:'auto',WebkitOverflowScrolling:'touch'}},h('div',{style:{display:'flex',padding:'0 clamp(16px,4vw,36px)',minWidth:'max-content'}},tabs.map(t=>h('button',{key:t.id,onClick:()=>onChange(t.id),style:{padding:'12px 16px',border:'none',background:'none',cursor:'pointer',fontSize:12,fontWeight:active===t.id?600:400,color:active===t.id?'#1C1C1C':'#8A8A82',borderBottom:active===t.id?'2px solid #1C1C1C':'2px solid transparent',fontFamily:'inherit',whiteSpace:'nowrap'}},t.label))));}
+function Header({left,right}){return h('header',{style:{background:'#fff',borderBottom:'1px solid #E5E5E0',padding:'0 clamp(16px,4vw,36px)',display:'flex',alignItems:'center',justifyContent:'space-between',height:60,position:'sticky',top:0,zIndex:100}},h('div',{style:{display:'flex',alignItems:'center',gap:12}},left),h('div',{style:{display:'flex',alignItems:'center',gap:12}},right));}
+function Modal({title,onClose,children,wide}){return h('div',{style:{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16},onClick:e=>e.target===e.currentTarget&&onClose()},h('div',{style:{background:'#fff',borderRadius:12,width:'100%',maxWidth:wide?720:520,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}},h('div',{style:{padding:'22px 24px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'#fff',borderRadius:'12px 12px 0 0',zIndex:1,borderBottom:'1px solid #F0F0EC'}},h('span',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:19,fontWeight:400,color:'#1C1C1C'}},title),h('button',{onClick:onClose,style:{background:'none',border:'none',cursor:'pointer',color:'#aaa',fontSize:20}},'✕')),h('div',{style:{padding:'20px 24px 24px'}},children)));}
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  const [loading,setLoading]=useState(true);
+  const [admins,setAdmins]=useState([]);
+  const [clients,setClients]=useState([]);
+  const [session,setSession]=useState(null);
+  useEffect(()=>{
+    (async()=>{
+      let a=await db.get('admins');if(!a||!a.length){a=DEF_ADMINS;await db.set('admins',a);}
+      let c=await db.get('clients');if(!c||!c.length){c=[DEF_CLIENT];await db.set('clients',c);}
+      setAdmins(a);setClients(c);
+      try{const sv=JSON.parse(localStorage.getItem('jmb_session')||'null');if(sv){if(sv.role==='owner'||sv.role==='planner'){const u=a.find(x=>x.id===sv.userId&&x.password===sv.pw);if(u)setSession({role:u.role,user:u,userId:u.id,pw:u.password});}else if(sv.role==='couple'){const cl=c.find(x=>x.id===sv.clientId&&x.coupleUser===sv.coupleUser);if(cl)setSession({role:'couple',client:cl,clientId:cl.id,coupleUser:cl.coupleUser});}}}catch(e){}
+      setLoading(false);
+      db.listen('admins',val=>{if(val)setAdmins(val);});
+      db.listen('clients',val=>{if(val)setClients(val);});
+    })();
+  },[]);
+  const saveA=async a=>{setAdmins(a);await db.set('admins',a);};
+  const saveC=async c=>{setClients(c);await db.set('clients',c);};
+  const upClient=async u=>{const arr=clients.map(c=>c.id===u.id?u:c);await saveC(arr);if(session&&session.role==='couple'&&session.client.id===u.id)setSession(s=>({...s,client:u}));};
+  const login=(sess,rem)=>{setSession(sess);try{rem?localStorage.setItem('jmb_session',JSON.stringify(sess)):localStorage.removeItem('jmb_session');}catch(e){}};
+  const logout=()=>{setSession(null);try{localStorage.removeItem('jmb_session');}catch(e){}};
+  if(loading)return h('div',{style:{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#fff'}},h('div',{style:{fontFamily:"'Great Vibes',cursive",fontSize:44,color:'#1C1C1C',marginBottom:6}},'Just Married'),h('div',{style:{fontSize:10,color:'#aaa',letterSpacing:'0.28em',textTransform:'uppercase',marginBottom:32}},'Barcelona'),h('div',{style:{width:36,height:36,border:'2px solid #E5E5E0',borderTopColor:'#1C1C1C',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}));
+  if(!session)return h(Login,{admins,clients,onLogin:login});
+  if(session.role==='couple')return h(CoupleApp,{session,onLogout:logout,onUpdate:upClient});
+  const myC=session.role==='owner'?clients:clients.filter(c=>c.leadId===session.user.id||(c.collaboratorIds||[]).includes(session.user.id));
+  return h(AdminApp,{session,admins,myClients:myC,allClients:clients,onLogout:logout,onSaveAdmins:saveA,onSaveClients:saveC,onUpdate:upClient});
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function Login({admins,clients,onLogin}){
+  const [tab,setTab]=useState('couple');
+  const [user,setUser]=useState('');
+  const [pass,setPass]=useState('');
+  const [rem,setRem]=useState(false);
+  const [err,setErr]=useState('');
+  const go=()=>{setErr('');if(tab==='team'){const u=admins.find(a=>a.username===user.trim().toLowerCase()&&a.password===pass);if(!u){setErr('Invalid credentials.');return;}onLogin({role:u.role,user:u,userId:u.id,pw:u.password},rem);}else{const c=clients.find(c=>c.coupleUser===user.trim().toLowerCase()&&c.couplePass===pass);if(!c){setErr('Incorrect credentials.');return;}onLogin({role:'couple',client:c,clientId:c.id,coupleUser:c.coupleUser},rem);}};
+  const inp=(val,onChange,opts={})=>h('input',{...opts,style:{...I,...(opts.style||{})},value:val,onChange:e=>onChange(e.target.value),onKeyDown:e=>e.key==='Enter'&&go()});
+  return h('div',{style:{minHeight:'100vh',background:'#F8F8F6',display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
+    h('div',{style:{width:'100%',maxWidth:400}},
+      h('div',{style:{textAlign:'center',marginBottom:32}},h('div',{style:{fontFamily:"'Great Vibes',cursive",fontSize:46,color:'#1C1C1C',lineHeight:1.1}},'Just Married'),h('div',{style:{fontSize:10,color:'#aaa',letterSpacing:'0.3em',textTransform:'uppercase',marginTop:8}},'Barcelona · Wedding Planning')),
+      h('div',{style:{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',overflow:'hidden',boxShadow:'0 4px 30px rgba(0,0,0,0.08)'}},
+        h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',borderBottom:'1px solid #E5E5E0'}},
+          [['couple','Our Wedding 💍'],['team','Team Login']].map(([id,label])=>h('button',{key:id,onClick:()=>{setTab(id);setErr('');setUser('');setPass('');},style:{padding:'14px',border:'none',background:tab===id?'#fff':'#F8F8F6',color:tab===id?'#1C1C1C':'#8A8A82',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:tab===id?600:400,borderBottom:tab===id?'2px solid #1C1C1C':'2px solid transparent'}},label))
+        ),
+        h('div',{style:{padding:24}},
+          h('div',{style:{marginBottom:14}},h('label',{style:L},'Username'),inp(user,setUser,{placeholder:tab==='team'?'anna · judit · admin':'couple username',autoComplete:'username'})),
+          h('div',{style:{marginBottom:16}},h('label',{style:L},'Password'),inp(pass,setPass,{type:'password',autoComplete:'current-password'})),
+          h('label',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:18,cursor:'pointer'}},
+            h('div',{onClick:()=>setRem(r=>!r),style:{width:38,height:20,borderRadius:10,background:rem?'#1C1C1C':'#E5E5E0',position:'relative',transition:'background 0.2s',cursor:'pointer',flexShrink:0}},h('div',{style:{position:'absolute',top:2,left:rem?20:2,width:16,height:16,borderRadius:'50%',background:'#fff',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}})),
+            h('span',{style:{fontSize:12,color:'#8A8A82'}},'Remember me')
+          ),
+          err&&h('div',{style:{background:'#fef2f2',border:'1px solid #fca5a5',borderRadius:6,padding:'8px 12px',color:'#dc2626',fontSize:12,marginBottom:14}},err),
+          h('button',{onClick:go,style:{...BG,width:'100%',padding:'12px',textTransform:'uppercase',letterSpacing:'0.1em'}},tab==='couple'?'Access My Wedding →':'Sign In →')
+        )
+      ),
+      h('div',{style:{marginTop:14,background:'#F8F8F6',borderRadius:8,padding:'12px 16px',border:'1px solid #E5E5E0'}},
+        h('div',{style:{fontSize:10,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}},'Demo'),
+        tab==='couple'?h('div',{style:{fontSize:12,color:'#6A6A64'}},'caitlingus / xalet2025'):
+        h('div',{style:{fontSize:12,color:'#6A6A64',lineHeight:1.9}},'admin / justmarried (Owner)',h('br'),'anna / jmb2025 · judit / jmb2025 (Planners)')
+      )
+    )
+  );
+}
+
+// ── ADMIN APP ─────────────────────────────────────────────────────────────────
+function AdminApp({session,admins,myClients,allClients,onLogout,onSaveAdmins,onSaveClients,onUpdate}){
+  const [view,setView]=useState('dash');
+  const [activeId,setActiveId]=useState(null);
+  const [ctab,setCtab]=useState('roadmap');
+  const [showNew,setShowNew]=useState(false);
+  const isOwner=session.role==='owner';
+
+  if(view==='client'&&activeId){
+    const cl=allClients.find(c=>c.id===activeId);
+    if(!cl)return null;
+    const lead=admins.find(a=>a.id===cl.leadId);
+    const days=Math.ceil((new Date(cl.date)-new Date())/86400000);
+    return h('div',{style:{minHeight:'100vh',background:'#FAFAF8'}},
+      h(Header,{
+        left:[h('button',{key:'b',onClick:()=>{setView('dash');setActiveId(null);},style:{background:'none',border:'none',color:'#1C1C1C',cursor:'pointer',fontSize:13}},'← Back'),h('span',{key:'s',style:{width:1,height:20,background:'#E5E5E0'}}),h('span',{key:'n',style:{fontFamily:"'Great Vibes',cursive",fontSize:24,color:'#1C1C1C'}},cl.bride+' & '+cl.groom)],
+        right:[lead&&h(Avatar,{key:'av',name:lead.name,size:22}),h('div',{key:'d',style:{textAlign:'right'}},h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:400,color:'#1C1C1C',lineHeight:1}},days>0?days:0),h('div',{style:{fontSize:9,color:'#8A8A82',letterSpacing:'0.1em',textTransform:'uppercase'}},'days'))]
+      }),
+      h(TabBar,{tabs:ADMIN_TABS,active:ctab,onChange:setCtab}),
+      h('div',{style:{maxWidth:1080,margin:'0 auto',padding:'clamp(20px,4vw,32px) clamp(16px,3vw,24px)'}},h(TabContent,{client:cl,tab:ctab,isAdmin:true,onUpdate}))
+    );
+  }
+  if(view==='team')return h(TeamView,{admins,clients:allClients,session,onSaveAdmins,onSaveClients,onBack:()=>setView('dash')});
+
+  const stats=[['Clients',allClients.length],['2025',allClients.filter(c=>c.date&&c.date.startsWith('2025')).length],['Revenue','€'+allClients.reduce((a,c)=>a+(c.budget||0),0).toLocaleString('es-ES',{maximumFractionDigits:0})],['Pending','€'+allClients.reduce((a,c)=>a+Math.max(0,(c.budget||0)-(c.budgetPaid||0)),0).toLocaleString('es-ES',{maximumFractionDigits:0})]];
+  return h('div',{style:{minHeight:'100vh',background:'#FAFAF8'}},
+    h(Header,{
+      left:[h(Logo,{key:'l'}),h('span',{key:'s',style:{width:1,height:20,background:'#E5E5E0'}}),h('span',{key:'r',className:'hide-sm',style:{fontSize:11,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase'}},isOwner?'Dashboard':'My Weddings')],
+      right:[h(Avatar,{key:'av',name:session.user.name,size:28}),h('span',{key:'n',className:'hide-sm',style:{fontSize:12,color:'#6A6A64'}},session.user.name),isOwner&&h('button',{key:'t',onClick:()=>setView('team'),style:{...BO,fontSize:11,padding:'6px 14px'}},'Team'),h('button',{key:'o',onClick:onLogout,style:{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:12}},'Log out')]
+    }),
+    h('div',{style:{maxWidth:1100,margin:'0 auto',padding:'clamp(20px,4vw,36px) clamp(16px,3vw,24px)'}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:28,flexWrap:'wrap',gap:12}},
+        h('div',null,h('h1',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(24px,4vw,32px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 4px'}},isOwner?'All Weddings':'My Weddings'),h('p',{style:{color:'#8A8A82',margin:0,fontSize:13}},myClients.length+' client'+(myClients.length!==1?'s':''))),
+        isOwner&&h('button',{onClick:()=>setShowNew(true),style:{...BG}},'＋ New Client')
+      ),
+      isOwner&&h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:14,marginBottom:28}},stats.map(([l,v])=>h('div',{key:l,style:{background:'#fff',borderRadius:10,padding:'18px 20px',border:'1px solid #E5E5E0'}},h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(18px,3vw,26px)',fontWeight:400,color:'#1C1C1C'}},v),h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:3}},l)))),
+      myClients.length===0?h('div',{style:{textAlign:'center',padding:'60px 20px',background:'#fff',borderRadius:12,border:'1px solid #E5E5E0'}},h('div',{style:{fontSize:36,marginBottom:12}},'💍'),h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#aaa'}},'No weddings assigned yet')):
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(290px,1fr))',gap:18}},myClients.map(c=>{
+        const lead=admins.find(a=>a.id===c.leadId);
+        const tv=(c.vendors||[]).length,cv=(c.vendors||[]).filter(v=>v.confirmed).length,pct=tv?Math.round(cv/tv*100):0;
+        const days=Math.ceil((new Date(c.date)-new Date())/86400000);
+        return h('div',{key:c.id,onClick:()=>{setActiveId(c.id);setCtab('roadmap');setView('client');},style:{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',overflow:'hidden',cursor:'pointer'},onMouseEnter:e=>e.currentTarget.style.boxShadow='0 8px 28px rgba(0,0,0,0.1)',onMouseLeave:e=>e.currentTarget.style.boxShadow='none'},
+          h('div',{style:{background:'#1C1C1C',padding:'18px 20px 14px',position:'relative'}},h('div',{style:{fontFamily:"'Great Vibes',cursive",fontSize:24,color:'#fff',lineHeight:1.2}},c.bride+' & '+c.groom),h('div',{style:{color:'#888',fontSize:12,marginTop:3}},c.venue),h('div',{style:{position:'absolute',top:14,right:14,background:'rgba(255,255,255,0.1)',borderRadius:16,padding:'3px 10px',fontSize:11,color:'#ccc'}},days>0?days+'d':days===0?'Today':'Past')),
+          h('div',{style:{padding:'14px 20px 18px'}},
+            h('div',{style:{display:'flex',justifyContent:'space-between',color:'#8A8A82',fontSize:12,marginBottom:10}},h('span',null,c.date?new Date(c.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''),h('span',null,c.guests&&c.guests.adults?c.guests.adults+' guests':'')),
+            lead&&h('div',{style:{display:'flex',alignItems:'center',gap:6,marginBottom:10,padding:'5px 8px',background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0'}},h(Avatar,{name:lead.name,size:18}),h('span',{style:{fontSize:11,color:'#555'}},lead.name),h('span',{style:{fontSize:10,color:'#B5977A',marginLeft:4}},'Lead')),
+            tv>0&&h('div',null,h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11,color:'#8A8A82',marginBottom:4}},h('span',null,'Vendors confirmed'),h('span',{style:{color:pct>=100?'#16a34a':pct>=50?'#d97706':'#dc2626',fontWeight:600}},cv+'/'+tv)),h('div',{style:{background:'#F0F0EC',borderRadius:4,height:5}},h('div',{style:{background:pct>=100?'#16a34a':'#1C1C1C',height:5,borderRadius:4,width:pct+'%',transition:'width 0.5s'}})))
+          )
+        );
+      }))
+    ),
+    showNew&&h(NewClientModal,{admins,onClose:()=>setShowNew(false),onSave:nc=>{onSaveClients([...allClients,nc]);setShowNew(false);}})
+  );
+}
+
+// ── TEAM VIEW ─────────────────────────────────────────────────────────────────
+function TeamView({admins,clients,session,onSaveAdmins,onSaveClients,onBack}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [editAcc,setEditAcc]=useState(null);
+  const [mf,setMf]=useState({name:'',username:'',password:'',role:'planner'});
+  return h('div',{style:{minHeight:'100vh',background:'#FAFAF8'}},
+    h(Header,{left:[h('button',{key:'b',onClick:onBack,style:{background:'none',border:'none',color:'#1C1C1C',cursor:'pointer',fontSize:13}},'← Back'),h('span',{key:'s',style:{width:1,height:20,background:'#E5E5E0'}}),h(Logo,{key:'l',size:22})],right:[h('span',{style:{fontSize:12,color:'#8A8A82'}},'Team & Access')]}),
+    h('div',{style:{maxWidth:880,margin:'0 auto',padding:'32px clamp(16px,3vw,24px)'}},
+      h('div',{style:{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',padding:24,marginBottom:20}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18,flexWrap:'wrap',gap:10}},h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#1C1C1C',margin:0}},'Team Members'),h('button',{onClick:()=>setShowAdd(true),style:{...BG,fontSize:12}},'＋ Add Member')),
+        admins.map(a=>{const rb=ROLE_BADGE[a.role]||ROLE_BADGE.planner;const cnt=clients.filter(c=>c.leadId===a.id||(c.collaboratorIds||[]).includes(a.id)).length;return h('div',{key:a.id,style:{display:'flex',alignItems:'center',gap:12,background:'#F8F8F6',borderRadius:8,padding:'12px 16px',border:'1px solid #E5E5E0',marginBottom:8,flexWrap:'wrap'}},h(Avatar,{name:a.name,size:36}),h('div',{style:{flex:1}},h('div',{style:{fontWeight:600,fontSize:14,color:'#1C1C1C'}},a.name),h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:2}},'@'+a.username+' · pw: '+a.password+' · '+cnt+' wedding'+(cnt!==1?'s':''))),h('span',{style:{fontSize:10,fontWeight:600,padding:'3px 10px',borderRadius:10,background:rb.bg,color:rb.color,border:'1px solid '+rb.border}},rb.label),admins.length>1&&a.id!==session.user.id&&h('button',{onClick:()=>onSaveAdmins(admins.filter(x=>x.id!==a.id)),style:{background:'none',border:'none',cursor:'pointer',color:'#fca5a5',fontSize:16}},'✕'));})
+      ),
+      h('div',{style:{background:'#fff',borderRadius:12,border:'1px solid #E5E5E0',padding:24}},
+        h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:300,color:'#1C1C1C',margin:'0 0 16px'}},'Assignments'),
+        clients.map(c=>{const lead=admins.find(a=>a.id===c.leadId);return h('div',{key:c.id,style:{background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0',padding:'12px 16px',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}},
+          h('div',null,h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,color:'#1C1C1C'}},c.bride+' & '+c.groom),h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:2}},c.venue+' · Login: '+c.coupleUser+'/'+c.couplePass),lead&&h('div',{style:{display:'flex',alignItems:'center',gap:4,marginTop:4}},h(Avatar,{name:lead.name,size:16}),h('span',{style:{fontSize:11,color:'#555'}},lead.name+' (Lead)'))),
+          h('button',{onClick:()=>setEditAcc({...c}),style:{...BO,fontSize:11,padding:'6px 12px'}},'Manage')
+        );})
+      )
+    ),
+    showAdd&&h(Modal,{title:'Add Team Member',onClose:()=>setShowAdd(false)},
+      h(Field,{label:'Full Name'},h('input',{style:I,value:mf.name,onChange:e=>setMf(p=>({...p,name:e.target.value}))})),
+      h(Field,{label:'Username',mt:12},h('input',{style:I,value:mf.username,onChange:e=>setMf(p=>({...p,username:e.target.value.toLowerCase()}))})),
+      h(Field,{label:'Password',mt:12},h('input',{style:I,value:mf.password,onChange:e=>setMf(p=>({...p,password:e.target.value}))})),
+      h('div',{style:{marginTop:14}},h('label',{style:L},'Role'),h('div',{style:{display:'flex',gap:10}},['planner','owner'].map(r=>h('button',{key:r,onClick:()=>setMf(p=>({...p,role:r})),style:{flex:1,padding:'10px',borderRadius:8,border:'1.5px solid '+(mf.role===r?'#1C1C1C':'#E5E5E0'),background:mf.role===r?'#1C1C1C':'#fff',color:mf.role===r?'#fff':'#1C1C1C',cursor:'pointer',fontFamily:'inherit',fontSize:12}},r==='owner'?'Owner':'Planner')))),
+      h('div',{style:{display:'flex',gap:10,marginTop:20,justifyContent:'flex-end'}},h('button',{onClick:()=>setShowAdd(false),style:BO},'Cancel'),h('button',{onClick:()=>{if(!mf.name||!mf.username||!mf.password)return;onSaveAdmins([...admins,{id:'a'+Date.now(),...mf}]);setShowAdd(false);setMf({name:'',username:'',password:'',role:'planner'});},style:BG},'Add'))
+    ),
+    editAcc&&h(AccessModal,{client:editAcc,admins,onClose:()=>setEditAcc(null),onSave:u=>{onSaveClients(clients.map(c=>c.id===u.id?u:c));setEditAcc(null);}})
+  );
+}
+function AccessModal({client,admins,onClose,onSave}){
+  const [c,setC]=useState({...client,collaboratorIds:client.collaboratorIds||[]});
+  return h(Modal,{title:client.bride+' & '+client.groom+' — Access',onClose,wide:true},
+    h('div',{style:{background:'#F8F8F6',borderRadius:8,padding:16,marginBottom:14,border:'1px solid #E5E5E0'}},
+      h('label',{style:L},'Lead Planner'),
+      h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}},h('button',{onClick:()=>setC(p=>({...p,leadId:null})),style:{padding:'5px 12px',borderRadius:16,border:'1.5px solid '+(c.leadId?'#E5E5E0':'#1C1C1C'),background:c.leadId?'#fff':'#1C1C1C',color:c.leadId?'#8A8A82':'#fff',fontSize:11,cursor:'pointer',fontFamily:'inherit'}},'None'),admins.map(a=>h('button',{key:a.id,onClick:()=>setC(p=>({...p,leadId:a.id})),style:{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:16,border:'1.5px solid '+(c.leadId===a.id?'#1C1C1C':'#E5E5E0'),background:c.leadId===a.id?'#1C1C1C':'#fff',color:c.leadId===a.id?'#fff':'#555',fontSize:11,cursor:'pointer',fontFamily:'inherit'}},h(Avatar,{name:a.name,size:16}),a.name))),
+      h('label',{style:{...L,marginTop:10}},'Couple Login'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:4}},h(Field,{label:'Username'},h('input',{style:I,value:c.coupleUser||'',onChange:e=>setC(p=>({...p,coupleUser:e.target.value.toLowerCase()}))})),h(Field,{label:'Password'},h('input',{style:I,value:c.couplePass||'',onChange:e=>setC(p=>({...p,couplePass:e.target.value}))}))),
+      h('label',{style:{...L,marginTop:10}},'Visible Tabs'),
+      h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}},COUPLE_TABS.map(id=>{const t=ADMIN_TABS.find(x=>x.id===id);const active=(c.visibleTabs||[]).includes(id);return h('button',{key:id,onClick:()=>setC(p=>({...p,visibleTabs:active?p.visibleTabs.filter(x=>x!==id):[...(p.visibleTabs||[]),id]})),style:{padding:'5px 14px',borderRadius:16,border:'1.5px solid '+(active?'#1C1C1C':'#E5E5E0'),background:active?'#1C1C1C':'#fff',color:active?'#fff':'#8A8A82',fontSize:11,cursor:'pointer',fontFamily:'inherit',fontWeight:active?600:400}},t&&t.label);}))
+    ),
+    h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:onClose,style:BO},'Cancel'),h('button',{onClick:()=>onSave(c),style:BG},'Save'))
+  );
+}
+
+// ── COUPLE APP ────────────────────────────────────────────────────────────────
+function CoupleApp({session,onLogout,onUpdate}){
+  const cl=session.client;
+  const vTabs=ADMIN_TABS.filter(t=>(cl.visibleTabs||[]).includes(t.id));
+  const [tab,setTab]=useState(vTabs[0]&&vTabs[0].id||'roadmap');
+  const days=Math.ceil((new Date(cl.date)-new Date())/86400000);
+  return h('div',{style:{minHeight:'100vh',background:'#FAFAF8'}},
+    h(Header,{left:[h(Logo,{key:'l'}),h('span',{key:'s',style:{width:1,height:20,background:'#E5E5E0'}}),h('span',{key:'n',className:'hide-sm',style:{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontStyle:'italic',color:'#1C1C1C'}},cl.bride+' & '+cl.groom)],right:[h('div',{key:'d',style:{textAlign:'right'}},h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:400,color:'#1C1C1C',lineHeight:1}},days>0?days:0),h('div',{style:{fontSize:9,color:'#8A8A82',letterSpacing:'0.1em',textTransform:'uppercase'}},'days')),h('button',{key:'o',onClick:onLogout,style:{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:12}},'Log out')]}),
+    h(TabBar,{tabs:vTabs,active:tab,onChange:setTab}),
+    h('div',{style:{maxWidth:1080,margin:'0 auto',padding:'clamp(20px,4vw,32px) clamp(16px,3vw,24px)'}},h(TabContent,{client:cl,tab,isAdmin:false,onUpdate}))
+  );
+}
+function TabContent({client,tab,isAdmin,onUpdate}){
+  if(tab==='roadmap')return h(RoadmapTab,{client,isAdmin,onUpdate});
+  if(tab==='vendors')return h(VendorsTab,{client,isAdmin,onUpdate});
+  if(tab==='setup')return h(SetupTab,{client,isAdmin,onUpdate});
+  if(tab==='rundown')return h(RundownTab,{client,isAdmin,onUpdate});
+  if(tab==='design')return h(DesignTab,{client,isAdmin,onUpdate});
+  if(tab==='moodboard')return h(MoodBoardTab,{client,isAdmin,onUpdate});
+  if(tab==='budget')return h(BudgetTab,{client,isAdmin,onUpdate});
+  if(tab==='family')return h(FamilyTab,{client,isAdmin,onUpdate});
+  if(tab==='inspection')return h(InspectionTab,{client,isAdmin,onUpdate});
+  return null;
+}
+
+// ── ROADMAP ───────────────────────────────────────────────────────────────────
+function RoadmapTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [editing,setEditing]=useState(null);
+  const ef={category:'Venue',item:'',status:'pending',notes:'',dueDate:'',adminOnly:false};
+  const [form,setForm]=useState(ef);
+  const visible=isAdmin?client.roadmap:(client.roadmap||[]).filter(r=>!r.adminOnly&&!(client.hiddenRoadmapIds||[]).includes(r.id));
+  const cats=RCATS.filter(c=>visible.some(r=>r.category===c));
+  const counts=Object.fromEntries(Object.keys(STATUS).map(k=>[k,visible.filter(r=>r.status===k).length]));
+  const tv=(client.vendors||[]).length,cv=(client.vendors||[]).filter(v=>v.confirmed).length,vpct=tv?Math.round(cv/tv*100):0;
+  const save=()=>{const upd=editing?(client.roadmap||[]).map(r=>r.id===editing?{...r,...form}:r):[...(client.roadmap||[]),{...form,id:'r'+Date.now()}];onUpdate({...client,roadmap:upd});setShowAdd(false);setEditing(null);setForm(ef);};
+  return h('div',null,
+    h('div',{style:{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap',alignItems:'center'}},
+      Object.entries(STATUS).map(([k,s])=>counts[k]>0&&h('div',{key:k,style:{background:s.bg,border:'1px solid '+s.border,borderRadius:16,padding:'4px 12px',display:'flex',alignItems:'center',gap:6}},h('div',{style:{width:6,height:6,borderRadius:'50%',background:s.color}}),h('span',{style:{fontSize:12,color:s.color,fontWeight:600}},counts[k]),h('span',{style:{fontSize:12,color:'#555'}},s.label))),
+      isAdmin&&h('button',{onClick:()=>{setEditing(null);setForm(ef);setShowAdd(true);},style:{...BG,marginLeft:'auto',fontSize:11,padding:'6px 14px'}},'＋ Add Item')
+    ),
+    tv>0&&h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'14px 18px',marginBottom:18}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:8}},h('span',{style:{fontSize:12,color:'#555',fontWeight:500}},'Vendors confirmed'),h('span',{style:{fontSize:12,fontWeight:600,color:vpct>=100?'#16a34a':vpct>=50?'#d97706':'#dc2626'}},cv+'/'+tv)),
+      h('div',{style:{background:'#F0F0EC',borderRadius:5,height:8,overflow:'hidden'}},h('div',{style:{background:vpct>=100?'#16a34a':'#1C1C1C',height:8,borderRadius:5,width:vpct+'%',transition:'width 0.5s'}})),
+      h('div',{style:{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:11,color:'#aaa'}},h('span',null,vpct+'% locked in'),vpct>=100?h('span',{style:{color:'#16a34a',fontWeight:600}},'✓ All confirmed!'):h('span',null,(tv-cv)+' pending'))
+    ),
+    visible.length===0&&h('div',{style:{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0'}},h('div',{style:{fontSize:32,marginBottom:10}},'📋'),h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa',marginBottom:6}},'No roadmap items yet'),h('p',{style:{color:'#aaa',fontSize:12,maxWidth:320,margin:'0 auto'}},isAdmin?'Add items to track progress.':'Your planner will add items here.')),
+    cats.map(cat=>h('div',{key:cat,style:{marginBottom:18}},
+      h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:'0 0 8px',paddingLeft:10,borderLeft:'2px solid #1C1C1C'}},cat),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+        visible.filter(r=>r.category===cat).map(r=>{const s=STATUS[r.status]||STATUS.pending;return h('div',{key:r.id,style:{background:'#fff',border:'1px solid '+s.border,borderRadius:8,padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}},
+          h('div',{style:{display:'flex',gap:8,flex:1}},h('div',{style:{width:7,height:7,borderRadius:'50%',background:s.color,marginTop:5,flexShrink:0}}),h('div',{style:{flex:1}},h('div',{style:{fontWeight:500,color:'#1C1C1C',fontSize:13}},r.item,isAdmin&&r.adminOnly&&h('span',{style:{fontSize:9,background:'#f0f0ff',color:'#7c3aed',padding:'1px 6px',borderRadius:6,marginLeft:6}},'Admin')),r.notes&&h('div',{style:{fontSize:12,color:'#6A6A64',marginTop:2,lineHeight:1.5}},r.notes),r.dueDate&&h('div',{style:{fontSize:10,color:'#aaa',marginTop:3}},'Due: '+new Date(r.dueDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})))),
+          h('div',{style:{display:'flex',alignItems:'center',gap:6,flexShrink:0}},
+            h('span',{style:{background:s.bg,color:s.color,fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:10,whiteSpace:'nowrap'}},s.label),
+            isAdmin&&h('button',{onClick:()=>{setEditing(r.id);setForm({category:r.category,item:r.item,status:r.status,notes:r.notes||'',dueDate:r.dueDate||'',adminOnly:!!r.adminOnly});setShowAdd(true);},style:{background:'none',border:'none',cursor:'pointer',color:'#B5977A',fontSize:13,padding:2}},'✎'),
+            isAdmin&&h('button',{onClick:()=>onUpdate({...client,roadmap:(client.roadmap||[]).filter(x=>x.id!==r.id)}),style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:13,padding:2}},'✕')
+          )
+        );})
+      )
+    )),
+    showAdd&&h(Modal,{title:editing?'Edit Item':'Add Item',onClose:()=>{setShowAdd(false);setEditing(null);}},
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},
+        h(Field,{label:'Category'},h('select',{style:I,value:form.category,onChange:e=>setForm(p=>({...p,category:e.target.value}))},RCATS.map(c=>h('option',{key:c},c)))),
+        h(Field,{label:'Status'},h('select',{style:I,value:form.status,onChange:e=>setForm(p=>({...p,status:e.target.value}))},Object.entries(STATUS).map(([k,s])=>h('option',{key:k,value:k},s.label))))
+      ),
+      h(Field,{label:'Item',mt:12},h('input',{style:I,value:form.item,onChange:e=>setForm(p=>({...p,item:e.target.value}))})),
+      h(Field,{label:'Notes',mt:12},h('textarea',{style:{...I,minHeight:60,resize:'vertical'},value:form.notes,onChange:e=>setForm(p=>({...p,notes:e.target.value}))})),
+      h(Field,{label:'Due Date',mt:12},h('input',{type:'date',style:I,value:form.dueDate,onChange:e=>setForm(p=>({...p,dueDate:e.target.value}))})),
+      h('label',{style:{display:'flex',alignItems:'center',gap:8,marginTop:12,cursor:'pointer',fontSize:13,color:'#6A6A64'}},h('input',{type:'checkbox',checked:!!form.adminOnly,onChange:e=>setForm(p=>({...p,adminOnly:e.target.checked}))}),'Admin only'),
+      h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:()=>{setShowAdd(false);setEditing(null);},style:BO},'Cancel'),h('button',{onClick:save,style:BG},editing?'Update':'Add'))
+    )
+  );
+}
+
+// ── VENDORS ───────────────────────────────────────────────────────────────────
+function VendorsTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [editing,setEditing]=useState(null);
+  const [showDocs,setShowDocs]=useState(null);
+  const [showLib,setShowLib]=useState(false);
+  const [filter,setFilter]=useState('All');
+  const ef={cat:'Venue',name:'',social:'',sType:'instagram',phone:'',contact:'',notes:'',confirmed:false,adminOnly:false,docs:[]};
+  const [form,setForm]=useState(ef);
+  const visible=isAdmin?(client.vendors||[]):(client.vendors||[]).filter(v=>!v.adminOnly);
+  const filtered=filter==='All'?visible:visible.filter(v=>v.cat===filter);
+  const activeCats=VCATS.filter(c=>visible.some(v=>v.cat===c));
+  const grouped=VCATS.reduce((acc,cat)=>{const items=filtered.filter(v=>v.cat===cat);if(items.length)acc[cat]=items;return acc;},{});
+  const save=()=>{const upd=editing?(client.vendors||[]).map(v=>v.id===editing?{...v,...form}:v):[...(client.vendors||[]),{...form,id:'v'+Date.now()}];onUpdate({...client,vendors:upd});setShowAdd(false);setEditing(null);setForm(ef);};
+  const docV=(client.vendors||[]).find(v=>v.id===showDocs);
+  return h('div',null,
+    h('div',{style:{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap',alignItems:'center'}},
+      ['All',...activeCats].map(c=>h('button',{key:c,onClick:()=>setFilter(c),style:{padding:'4px 12px',borderRadius:14,border:'1.5px solid '+(filter===c?'#1C1C1C':'#E5E5E0'),background:filter===c?'#1C1C1C':'#fff',color:filter===c?'#fff':'#8A8A82',fontSize:11,cursor:'pointer',fontFamily:'inherit',fontWeight:filter===c?600:400}},c)),
+      isAdmin&&h('div',{style:{display:'flex',gap:8,marginLeft:'auto'}},h('button',{onClick:()=>setShowLib(true),style:{...BO,fontSize:11,padding:'6px 12px'}},'📚 Library'),h('button',{onClick:()=>{setEditing(null);setForm(ef);setShowAdd(true);},style:{...BG,fontSize:11,padding:'6px 14px'}},'＋ Add'))
+    ),
+    visible.length===0&&h('div',{style:{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0'}},h('div',{style:{fontSize:32,marginBottom:10}},'🏢'),h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa'}},'No vendors yet'),isAdmin&&h('p',{style:{color:'#aaa',fontSize:12,marginTop:6}},'Use 📚 Library to add JMB regulars in one click.')),
+    Object.entries(grouped).map(([cat,vendors])=>h('div',{key:cat,style:{marginBottom:22}},
+      h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:'0 0 10px',paddingLeft:10,borderLeft:'2px solid #1C1C1C'}},cat),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:12}},
+        vendors.map(v=>h('div',{key:v.id,style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',overflow:'hidden'}},
+          h('div',{style:{background:v.confirmed?'#f0fdf4':'#fffbeb',padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E5E5E0'}},h('span',{style:{fontWeight:600,color:'#1C1C1C',fontSize:13}},v.name),h('span',{style:{fontSize:10,fontWeight:600,color:v.confirmed?'#16a34a':'#d97706',background:v.confirmed?'#dcfce7':'#fef9c3',padding:'2px 8px',borderRadius:8}},v.confirmed?'Confirmed':'Pending')),
+          h('div',{style:{padding:'10px 14px'}},
+            v.social&&h('div',{style:{marginBottom:6}},h(SocialBtn,{social:v.social,sType:v.sType})),
+            v.phone&&h('div',{style:{fontSize:12,color:'#555',marginBottom:4}},'📞 '+v.phone),
+            v.contact&&h('div',{style:{fontSize:12,color:'#555',marginBottom:4}},'👤 '+v.contact),
+            v.notes&&h('div',{style:{fontSize:11,color:'#aaa',fontStyle:'italic',borderTop:'1px solid #F5F5F2',paddingTop:6,marginTop:4}},v.notes),
+            ((v.docs||[]).length>0||isAdmin)&&h('button',{onClick:()=>setShowDocs(v.id),style:{...BO,fontSize:11,padding:'4px 10px',marginTop:6,width:'100%',borderColor:'#B5977A',color:'#B5977A'}},'📄 '+((v.docs||[]).length>0?(v.docs||[]).length+' doc'+(v.docs.length!==1?'s':''):'Documents & Quotes')),
+            isAdmin&&h('div',{style:{display:'flex',gap:6,marginTop:6}},h('button',{onClick:()=>{setEditing(v.id);setForm({cat:v.cat,name:v.name,social:v.social||'',sType:v.sType||'instagram',phone:v.phone||'',contact:v.contact||'',notes:v.notes||'',confirmed:!!v.confirmed,adminOnly:!!v.adminOnly,docs:v.docs||[]});setShowAdd(true);},style:{...BO,fontSize:11,padding:'4px 10px',flex:1}},'Edit'),h('button',{onClick:()=>onUpdate({...client,vendors:(client.vendors||[]).filter(x=>x.id!==v.id)}),style:{...BO,fontSize:11,padding:'4px 10px',color:'#dc2626',borderColor:'#fca5a5'}},'✕'))
+          )
+        ))
+      )
+    )),
+    showAdd&&h(Modal,{title:editing?'Edit Vendor':'Add Vendor',onClose:()=>{setShowAdd(false);setEditing(null);}},
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},h(Field,{label:'Category'},h('select',{style:I,value:form.cat,onChange:e=>setForm(p=>({...p,cat:e.target.value}))},VCATS.map(c=>h('option',{key:c},c)))),h(Field,{label:'Name'},h('input',{style:I,value:form.name,onChange:e=>setForm(p=>({...p,name:e.target.value}))}))),
+      h('div',{style:{marginTop:12}},h('label',{style:L},'Social'),h('div',{style:{display:'flex',gap:8}},h('select',{style:{...I,width:'auto',flexShrink:0},value:form.sType,onChange:e=>setForm(p=>({...p,sType:e.target.value}))},['instagram','facebook','website','tiktok'].map(t=>h('option',{key:t,value:t},t.charAt(0).toUpperCase()+t.slice(1)))),h('input',{style:I,placeholder:'@handle or URL',value:form.social,onChange:e=>setForm(p=>({...p,social:e.target.value}))}))),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}},h(Field,{label:'Phone'},h('input',{style:I,value:form.phone,onChange:e=>setForm(p=>({...p,phone:e.target.value}))})),h(Field,{label:'Contact'},h('input',{style:I,value:form.contact,onChange:e=>setForm(p=>({...p,contact:e.target.value}))}))),
+      h(Field,{label:'Notes',mt:12},h('textarea',{style:{...I,minHeight:50,resize:'vertical'},value:form.notes,onChange:e=>setForm(p=>({...p,notes:e.target.value}))})),
+      h('div',{style:{marginTop:12,display:'flex',gap:20}},h('label',{style:{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13,color:'#6A6A64'}},h('input',{type:'checkbox',checked:!!form.confirmed,onChange:e=>setForm(p=>({...p,confirmed:e.target.checked}))}),'Confirmed'),h('label',{style:{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13,color:'#6A6A64'}},h('input',{type:'checkbox',checked:!!form.adminOnly,onChange:e=>setForm(p=>({...p,adminOnly:e.target.checked}))}),'Admin only')),
+      h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:()=>{setShowAdd(false);setEditing(null);},style:BO},'Cancel'),h('button',{onClick:save,style:BG},editing?'Update':'Add'))
+    ),
+    showLib&&h(Modal,{title:'JMB Vendor Library',onClose:()=>setShowLib(false),wide:true},
+      h('p',{style:{color:'#8A8A82',fontSize:12,marginBottom:14}},'Add JMB regular vendors — details pre-filled.'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:8,maxHeight:400,overflowY:'auto'}},
+        JMB_LIBRARY.map((v,i)=>{const added=(client.vendors||[]).some(x=>x.name===v.name);return h('div',{key:i,style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0'}},
+          h('div',null,h('div',{style:{fontWeight:600,fontSize:13,color:'#1C1C1C'}},v.name),h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:2}},v.cat+(v.phone?' · '+v.phone:''))),
+          added?h('span',{style:{fontSize:10,color:'#16a34a',background:'#f0fdf4',padding:'2px 8px',borderRadius:8,fontWeight:600}},'✓ Added'):h('button',{onClick:()=>onUpdate({...client,vendors:[...(client.vendors||[]),{...v,id:'v'+Date.now(),confirmed:false,adminOnly:false,docs:[]}]}),style:{...BG,fontSize:11,padding:'5px 12px'}},'Add')
+        );})
+      ),
+      h('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:14}},h('button',{onClick:()=>setShowLib(false),style:BO},'Done'))
+    ),
+    showDocs&&docV&&h(DocsModal,{vendor:docV,isAdmin,onClose:()=>setShowDocs(null),onSave:u=>onUpdate({...client,vendors:(client.vendors||[]).map(v=>v.id===u.id?u:v)})})
+  );
+}
+function DocsModal({vendor,isAdmin,onClose,onSave}){
+  const [docs,setDocs]=useState(vendor.docs||[]);
+  const [adding,setAdding]=useState(false);
+  const [pf,setPf]=useState({title:'',description:'',price:'',fileName:'',fileData:''});
+  const fRef=useRef();
+  const handleFile=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setPf(p=>({...p,fileName:f.name,fileData:ev.target.result}));r.readAsDataURL(f);};
+  const add=()=>{if(!pf.title)return;const u=[...docs,{id:'d'+Date.now(),title:pf.title,description:pf.description,price:pf.price,fileName:pf.fileName,fileData:pf.fileData,chosen:false}];setDocs(u);onSave({...vendor,docs:u});setAdding(false);setPf({title:'',description:'',price:'',fileName:'',fileData:''});};
+  const tog=id=>{const u=docs.map(d=>({...d,chosen:d.id===id?!d.chosen:false}));setDocs(u);onSave({...vendor,docs:u});};
+  const del=id=>{const u=docs.filter(d=>d.id!==id);setDocs(u);onSave({...vendor,docs:u});};
+  return h(Modal,{title:vendor.name+' — Docs & Quotes',onClose,wide:true},
+    docs.length===0&&h('div',{style:{textAlign:'center',padding:'16px',color:'#ccc',background:'#F8F8F6',borderRadius:8,marginBottom:12,fontSize:13}},'No documents yet.'),
+    h('div',{style:{display:'flex',flexDirection:'column',gap:8,marginBottom:12}},docs.map(d=>h('div',{key:d.id,style:{background:d.chosen?'#f0fdf4':'#F8F8F6',borderRadius:8,border:'1px solid '+(d.chosen?'#86efac':'#E5E5E0'),padding:'12px 14px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}},
+      h('div',{style:{flex:1}},h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:3}},h('span',{style:{fontWeight:600,fontSize:13,color:'#1C1C1C'}},d.title),d.chosen&&h('span',{style:{fontSize:10,fontWeight:600,color:'#16a34a',background:'#dcfce7',padding:'1px 8px',borderRadius:8}},'✓ Chosen')),d.description&&h('div',{style:{fontSize:12,color:'#6A6A64'}},d.description),d.price&&h('div',{style:{fontSize:13,color:'#B5977A',fontWeight:600}},'€'+d.price),d.fileData&&h('a',{href:d.fileData,download:d.fileName,style:{display:'inline-flex',alignItems:'center',gap:4,marginTop:4,fontSize:11,color:'#7c3aed',background:'#f5f3ff',padding:'2px 8px',borderRadius:12,border:'1px solid #e9d5ff',textDecoration:'none'}},'📄 '+(d.fileName||'Download'))),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:5}},h('button',{onClick:()=>tog(d.id),style:{...BO,fontSize:10,padding:'3px 8px',borderColor:d.chosen?'#86efac':'#E5E5E0',color:d.chosen?'#16a34a':'#8A8A82'}},d.chosen?'Unchose':'Choose'),isAdmin&&h('button',{onClick:()=>del(d.id),style:{background:'none',border:'none',cursor:'pointer',color:'#fca5a5',fontSize:11}},'Remove'))
+    ))),
+    isAdmin&&!adding&&h('button',{onClick:()=>setAdding(true),style:{...BG,width:'100%',padding:'10px'}},'＋ Add Document / Quote'),
+    isAdmin&&adding&&h('div',{style:{background:'#F8F8F6',borderRadius:8,border:'1px solid #E5E5E0',padding:16}},
+      h(Field,{label:'Title'},h('input',{style:I,placeholder:'Budget Pack A · Contract',value:pf.title,onChange:e=>setPf(p=>({...p,title:e.target.value}))})),
+      h(Field,{label:'Description',mt:10},h('textarea',{style:{...I,minHeight:44,resize:'vertical'},value:pf.description,onChange:e=>setPf(p=>({...p,description:e.target.value}))})),
+      h(Field,{label:'Price (€)',mt:10},h('input',{style:I,value:pf.price,onChange:e=>setPf(p=>({...p,price:e.target.value}))})),
+      h('div',{style:{marginTop:10}},h('label',{style:L},'File'),h('button',{onClick:()=>fRef.current&&fRef.current.click(),style:{...BO,width:'100%'}},pf.fileName?'📄 '+pf.fileName:'📎 Choose file'),h('input',{ref:fRef,type:'file',accept:'application/pdf,image/*',style:{display:'none'},onChange:handleFile})),
+      h('div',{style:{display:'flex',gap:10,marginTop:12,justifyContent:'flex-end'}},h('button',{onClick:()=>setAdding(false),style:BO},'Cancel'),h('button',{onClick:add,style:BG},'Add'))
+    )
+  );
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function SetupTab({client,isAdmin,onUpdate}){
+  const setup=client.setup||{vendorArrivals:[],areas:[]};
+  const AREAS=['Welcome / Rehearsal','Ceremony','Aperitif','Dinner','Dance'];
+  const addArr=()=>onUpdate({...client,setup:{...setup,vendorArrivals:[...(setup.vendorArrivals||[]),{id:'va'+Date.now(),time:'',vendor:'',notes:''}]}});
+  const delArr=id=>onUpdate({...client,setup:{...setup,vendorArrivals:(setup.vendorArrivals||[]).filter(v=>v.id!==id)}});
+  const upArr=(id,f,v)=>onUpdate({...client,setup:{...setup,vendorArrivals:(setup.vendorArrivals||[]).map(x=>x.id===id?{...x,[f]:v}:x)}});
+  const addArea=area=>onUpdate({...client,setup:{...setup,areas:[...(setup.areas||[]),{id:'ar'+Date.now(),area,vendor:'',notes:''}]}});
+  const delArea=id=>onUpdate({...client,setup:{...setup,areas:(setup.areas||[]).filter(a=>a.id!==id)}});
+  const upArea=(id,f,v)=>onUpdate({...client,setup:{...setup,areas:(setup.areas||[]).map(a=>a.id===id?{...a,[f]:v}:a)}});
+  return h('div',null,
+    h(SH,{title:'Setup & Vendor Arrivals',sub:'Arrival times and montage per area.'}),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:18}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontWeight:400,color:'#1C1C1C',margin:0}},'Vendor Arrival Times'),isAdmin&&h('button',{onClick:addArr,style:{...BG,fontSize:11,padding:'5px 12px'}},'＋ Add')),
+      (setup.vendorArrivals||[]).length===0&&h('p',{style:{color:'#ccc',fontSize:12,textAlign:'center',padding:'12px 0'}},'No arrivals yet.'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:6}},(setup.vendorArrivals||[]).map(v=>isAdmin?
+        h('div',{key:v.id,style:{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}},h('input',{style:{...I,width:80,flexShrink:0},placeholder:'10:30',value:v.time,onChange:e=>upArr(v.id,'time',e.target.value)}),h('input',{style:{...I,flex:1,minWidth:120},placeholder:'Vendor',value:v.vendor,onChange:e=>upArr(v.id,'vendor',e.target.value)}),h('input',{style:{...I,flex:2,minWidth:160},placeholder:'Notes…',value:v.notes,onChange:e=>upArr(v.id,'notes',e.target.value)}),h('button',{onClick:()=>delArr(v.id),style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}},'✕')):
+        h('div',{key:v.id,style:{display:'flex',gap:14,padding:'7px 0',borderBottom:'1px solid #F5F5F2'}},h('span',{style:{width:60,color:'#B5977A',fontWeight:600,fontSize:12,flexShrink:0}},v.time),h('span',{style:{fontWeight:500,fontSize:12,minWidth:100}},v.vendor),h('span',{style:{color:'#6A6A64',fontSize:12}},v.notes))
+      ))
+    ),
+    AREAS.map(area=>{const items=(setup.areas||[]).filter(a=>a.area===area);return h('div',{key:area,style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:12}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},h('h4',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:400,color:'#1C1C1C',margin:0,paddingLeft:8,borderLeft:'2px solid #1C1C1C'}},area),isAdmin&&h('button',{onClick:()=>addArea(area),style:{...BO,fontSize:10,padding:'3px 10px'}},'＋')),
+      items.length===0&&h('p',{style:{color:'#ccc',fontSize:11,margin:0}},'No setup notes.'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:5}},items.map(a=>isAdmin?
+        h('div',{key:a.id,style:{display:'flex',gap:8,alignItems:'center'}},h('input',{style:{...I,width:100,flexShrink:0,fontSize:11},placeholder:'Vendor',value:a.vendor,onChange:e=>upArea(a.id,'vendor',e.target.value)}),h('input',{style:{...I,flex:1,fontSize:11},placeholder:'Description…',value:a.notes,onChange:e=>upArea(a.id,'notes',e.target.value)}),h('button',{onClick:()=>delArea(a.id),style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:13}},'✕')):
+        h('div',{key:a.id,style:{display:'flex',gap:12,borderBottom:'1px solid #F5F5F2',paddingBottom:4}},h('span',{style:{width:80,color:'#6A6A64',fontSize:12,fontWeight:500,flexShrink:0}},a.vendor),h('span',{style:{color:'#1C1C1C',fontSize:12}},a.notes))
+      ))
+    );}),
+    h('div',{style:{background:'#F8F8F6',borderRadius:10,border:'1px solid #E5E5E0',padding:18}},
+      h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}},'Instagram Handles'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:10}},
+        [['Bride','bride'],['Groom','groom'],['Wedding Planner','planner'],['Wedding Dress','dress'],['Suit','suit'],['Jewellery','jewellery'],['Venue','venue'],['Floral Design','florist'],['Stationery','stationery'],['AV Company','av'],['DJ','dj'],['Live Music','music'],['Photo','photo'],['Video','video'],['Content Creator','content']].map(([label,key])=>h('div',{key},h('label',{style:L},label),isAdmin?h('input',{style:I,placeholder:'@handle',value:(client.instagramHandles||{})[key]||'',onChange:e=>onUpdate({...client,instagramHandles:{...(client.instagramHandles||{}),[key]:e.target.value}})}):h('div',{style:{fontSize:12,paddingTop:3,minHeight:20}},(client.instagramHandles||{})[key]?h('a',{href:'https://instagram.com/'+((client.instagramHandles||{})[key]||'').replace('@',''),target:'_blank',rel:'noreferrer',style:{color:'#B5977A',textDecoration:'none'}},(client.instagramHandles||{})[key]):h('span',{style:{color:'#ddd'}},'—'))))
+      )
+    )
+  );
+}
+
+// ── RUNDOWN ───────────────────────────────────────────────────────────────────
+function RundownTab({client,isAdmin,onUpdate}){
+  const rd=client.rundown||{days:[]};
+  const [showAddDay,setShowAddDay]=useState(false);
+  const [newLabel,setNewLabel]=useState('');
+  const [coll,setColl]=useState({});
+  const tog=id=>setColl(p=>({...p,[id]:!p[id]}));
+  const addDay=()=>{if(!newLabel.trim())return;onUpdate({...client,rundown:{...rd,days:[...(rd.days||[]),{id:'d'+Date.now(),label:newLabel,items:[]}]}});setShowAddDay(false);setNewLabel('');};
+  const delDay=id=>onUpdate({...client,rundown:{...rd,days:(rd.days||[]).filter(d=>d.id!==id)}});
+  const addItem=did=>onUpdate({...client,rundown:{...rd,days:(rd.days||[]).map(d=>d.id===did?{...d,items:[...(d.items||[]),{id:'i'+Date.now(),time:'',who:'',action:''}]}:d)}});
+  const delItem=(did,iid)=>onUpdate({...client,rundown:{...rd,days:(rd.days||[]).map(d=>d.id===did?{...d,items:(d.items||[]).filter(i=>i.id!==iid)}:d)}});
+  const upItem=(did,iid,f,v)=>onUpdate({...client,rundown:{...rd,days:(rd.days||[]).map(d=>d.id===did?{...d,items:(d.items||[]).map(i=>i.id===iid?{...i,[f]:v}:i)}:d)}});
+  const upLabel=(did,v)=>onUpdate({...client,rundown:{...rd,days:(rd.days||[]).map(d=>d.id===did?{...d,label:v}:d)}});
+  const move=(did,iid,dir)=>{const day=(rd.days||[]).find(d=>d.id===did);if(!day)return;const idx=day.items.findIndex(i=>i.id===iid);const ni=[...day.items];const sw=idx+dir;if(sw<0||sw>=ni.length)return;const tmp=ni[idx];ni[idx]=ni[sw];ni[sw]=tmp;onUpdate({...client,rundown:{...rd,days:(rd.days||[]).map(d=>d.id===did?{...d,items:ni}:d)}});};
+  const isHdr=a=>a&&a.startsWith('──');
+  return h('div',null,
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}},
+      h('div',null,h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px'}},'Run Down'),h('p',{style:{color:'#8A8A82',margin:0,fontSize:12}},'Day-by-day schedule.')),
+      isAdmin&&h('button',{onClick:()=>setShowAddDay(true),style:BO},'＋ Add Day')
+    ),
+    (rd.days||[]).map(day=>{const isCol=coll[day.id];return h('div',{key:day.id,style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',marginBottom:14,overflow:'hidden'}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 18px',background:'#FAFAFA',borderBottom:isCol?'none':'1px solid #F0F0EC',cursor:'pointer'},onClick:()=>tog(day.id)},
+        h('div',{style:{display:'flex',alignItems:'center',gap:10,flex:1}},
+          h('span',{style:{fontSize:12,color:'#8A8A82',transform:isCol?'rotate(-90deg)':'rotate(0deg)',transition:'transform 0.2s',display:'inline-block'}},'▼'),
+          isAdmin?h('input',{style:{...I,border:'none',background:'transparent',fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,padding:0,flex:1},value:day.label,onChange:e=>{e.stopPropagation();upLabel(day.id,e.target.value);},onClick:e=>e.stopPropagation()}):h('span',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C'}},day.label)
+        ),
+        h('div',{style:{display:'flex',alignItems:'center',gap:8},onClick:e=>e.stopPropagation()},isAdmin&&h('button',{onClick:()=>addItem(day.id),style:{...BO,fontSize:10,padding:'3px 10px'}},'＋ Line'),isAdmin&&h('button',{onClick:()=>delDay(day.id),style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15,padding:2}},'✕'),h('span',{style:{fontSize:11,color:'#aaa',marginLeft:4}},(day.items||[]).length))
+      ),
+      !isCol&&h('div',{style:{padding:'8px 18px 14px'}},
+        isAdmin&&(day.items||[]).length>0&&h('div',{style:{display:'grid',gridTemplateColumns:'76px 110px 1fr 44px',gap:6,padding:'6px 0',borderBottom:'1px solid #F5F5F2',marginBottom:4}},['Time','Who','Action',''].map(hd=>h('span',{key:hd,style:{fontSize:9,color:'#8A8A82',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase'}},hd))),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:isAdmin?3:0}},
+          (day.items||[]).map((item,idx)=>{const hdr=isHdr(item.action);
+            if(!isAdmin)return hdr?h('div',{key:item.id,style:{padding:'12px 0 3px',borderTop:'1px solid #E5E5E0',marginTop:6}},h('span',{style:{fontSize:10,fontWeight:700,color:'#8A8A82',letterSpacing:'0.14em',textTransform:'uppercase'}},item.action.replace(/──/g,'').trim())):h('div',{key:item.id,style:{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid #F8F8F8'}},h('span',{style:{width:60,color:'#B5977A',fontWeight:600,fontSize:12,flexShrink:0}},item.time),item.who&&h('span',{style:{width:90,color:'#6A6A64',fontSize:11,flexShrink:0,fontStyle:'italic'}},item.who),h('span',{style:{color:'#1C1C1C',fontSize:12,flex:1,lineHeight:1.4}},item.action));
+            return h('div',{key:item.id,style:{display:'grid',gridTemplateColumns:'76px 110px 1fr 44px',gap:6,alignItems:'center',background:hdr?'#F8F8F6':'transparent',borderRadius:hdr?5:0,padding:hdr?'2px 4px':'0'}},
+              h('input',{style:{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff'},placeholder:'18:00',value:item.time,onChange:e=>upItem(day.id,item.id,'time',e.target.value)}),
+              h('input',{style:{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff'},placeholder:'JMB…',value:item.who,onChange:e=>upItem(day.id,item.id,'who',e.target.value)}),
+              h('input',{style:{...I,fontSize:11,padding:'4px 8px',background:hdr?'#F0F0EC':'#fff',fontWeight:hdr?600:400},value:item.action,onChange:e=>upItem(day.id,item.id,'action',e.target.value)}),
+              h('div',{style:{display:'flex',alignItems:'center',gap:1}},h('button',{onClick:()=>move(day.id,item.id,-1),disabled:idx===0,style:{background:'none',border:'none',cursor:idx===0?'default':'pointer',color:idx===0?'#F0F0EC':'#aaa',fontSize:11,padding:'2px'}},'↑'),h('button',{onClick:()=>move(day.id,item.id,1),disabled:idx===(day.items||[]).length-1,style:{background:'none',border:'none',cursor:idx===(day.items||[]).length-1?'default':'pointer',color:idx===(day.items||[]).length-1?'#F0F0EC':'#aaa',fontSize:11,padding:'2px'}},'↓'),h('button',{onClick:()=>delItem(day.id,item.id),style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:12,padding:'2px'}},'✕'))
+            );
+          }),
+          (day.items||[]).length===0&&h('p',{style:{color:'#ccc',fontSize:11,margin:'8px 0',textAlign:'center'}},'No items yet.')
+        )
+      )
+    );}),
+    showAddDay&&h(Modal,{title:'Add Day',onClose:()=>setShowAddDay(false)},h(Field,{label:'Day Label'},h('input',{style:I,placeholder:'e.g. Saturday 16th August — Wedding Day',value:newLabel,onChange:e=>setNewLabel(e.target.value),onKeyDown:e=>e.key==='Enter'&&addDay()})),h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:()=>setShowAddDay(false),style:BO},'Cancel'),h('button',{onClick:addDay,style:BG},'Add Day')))
+  );
+}
+
+// ── DESIGN ────────────────────────────────────────────────────────────────────
+function DesignTab({client,isAdmin,onUpdate}){
+  const [az,setAz]=useState('welcome');
+  const [nc,setNc]=useState('#B5977A');
+  const s=client.style||{};
+  const zones=client.designZones||{};
+  const palette=s.palette||['#1C1C1C','#F5F0E8','#B5977A'];
+  const upC=(i,v)=>onUpdate({...client,style:{...s,palette:palette.map((c,j)=>j===i?v:c)}});
+  const addC=()=>onUpdate({...client,style:{...s,palette:[...palette,nc]}});
+  const delC=i=>onUpdate({...client,style:{...s,palette:palette.filter((_,j)=>j!==i)}});
+  const gv=(z,k)=>((zones[z]||{}).fields||{})[k]||'';
+  const sv=(z,k,v)=>{const u={...zones,[z]:{...(zones[z]||{}),fields:{...((zones[z]||{}).fields||{}),[k]:v}}};onUpdate({...client,designZones:u});};
+  const gn=z=>(zones[z]||{}).notes||'';
+  const sn=(z,v)=>{const u={...zones,[z]:{...(zones[z]||{}),notes:v}};onUpdate({...client,designZones:u});};
+  const cz=DESIGN_ZONES.find(z=>z.id===az);
+  return h('div',null,
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:16}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}},h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:17,fontWeight:400,color:'#1C1C1C',margin:0}},'Colour Palette'),isAdmin&&h('span',{style:{fontSize:10,color:'#ccc'}},'Click swatch to edit')),
+      h('div',{style:{display:'flex',gap:12,flexWrap:'wrap',alignItems:'flex-start'}},
+        palette.map((c,i)=>h('div',{key:i,style:{textAlign:'center',position:'relative'}},h('div',{style:{width:60,height:60,borderRadius:10,background:c,border:'1.5px solid rgba(0,0,0,0.08)',boxShadow:'0 3px 10px rgba(0,0,0,0.1)',marginBottom:4,position:'relative',overflow:'hidden'}},isAdmin&&h('input',{type:'color',value:c,onChange:e=>upC(i,e.target.value),style:{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0,cursor:'pointer'}})),h('div',{style:{fontSize:9,color:'#8A8A82'}},c.toUpperCase()),isAdmin&&h('button',{onClick:()=>delC(i),style:{position:'absolute',top:-4,right:-4,width:15,height:15,borderRadius:'50%',background:'#dc2626',border:'1.5px solid #fff',cursor:'pointer',fontSize:9,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}},'✕'))),
+        isAdmin&&h('div',{style:{textAlign:'center'}},h('div',{style:{fontSize:9,color:'#8A8A82',marginBottom:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.1em'}},'Add'),h('div',{style:{display:'flex',alignItems:'center',gap:6}},h('div',{style:{position:'relative',width:38,height:38,borderRadius:8,border:'1.5px dashed #DEDED8',overflow:'hidden',background:nc}},h('input',{type:'color',value:nc,onChange:e=>setNc(e.target.value),style:{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0,cursor:'pointer'}})),h('button',{onClick:addC,style:{...BG,padding:'6px 10px',fontSize:12}},'＋')))
+      )
+    ),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:16}},h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 10px'}},'Overall Style & Mood'),isAdmin?h('textarea',{style:{...I,minHeight:50,resize:'vertical',fontSize:12},placeholder:'e.g. Elegant · Sophisticated · Classic with modern twist…',value:s.mood||'',onChange:e=>onUpdate({...client,style:{...s,mood:e.target.value}})}):h('p',{style:{color:'#6A6A64',fontSize:13,lineHeight:1.7,margin:0,fontStyle:'italic'}},s.mood||'—')),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:18,marginBottom:16}},
+      h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}},'Wedding Party Florals'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}},
+        [['Bride Bouquet','brideBouquet'],["Bridesmaids' Bouquets",'bridesmaidsBouquet'],['Groom Boutonnière','groomBout'],['Groomsmen Boutonnières','groomsmenBout'],['Flower Girls','flowerGirls'],['Page Boys','pageBoys'],["Parents' Flowers",'parentFlowers'],['Ring Box','ringBox']].map(([label,key])=>h('div',{key},h('label',{style:L},label),isAdmin?h('input',{style:{...I,fontSize:12},value:(s.partyFlorals||{})[key]||'',onChange:e=>onUpdate({...client,style:{...s,partyFlorals:{...(s.partyFlorals||{}),[key]:e.target.value}}})}):h('div',{style:{fontSize:12,color:'#1C1C1C',paddingTop:3,minHeight:20}},(s.partyFlorals||{})[key]||h('span',{style:{color:'#ccc'}},'—'))))
+      )
+    ),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',overflow:'hidden'}},
+      h('div',{style:{display:'flex',overflowX:'auto',borderBottom:'1px solid #E5E5E0',background:'#FAFAFA'}},DESIGN_ZONES.map(z=>h('button',{key:z.id,onClick:()=>setAz(z.id),style:{padding:'11px 16px',border:'none',background:az===z.id?'#fff':'transparent',borderBottom:az===z.id?'2px solid #1C1C1C':'2px solid transparent',color:az===z.id?'#1C1C1C':'#8A8A82',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:az===z.id?600:400,whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5,flexShrink:0}},z.icon,' ',z.label))),
+      h('div',{style:{padding:20}},
+        h('div',{style:{fontSize:11,color:'#8A8A82',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:14}},cz&&cz.icon,' ',cz&&cz.label),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}},(ZONE_FIELDS[az]||[]).map(field=>h('div',{key:field.key},h('label',{style:L},field.label),isAdmin?h('input',{style:{...I,fontSize:12},value:gv(az,field.key),onChange:e=>sv(az,field.key,e.target.value)}):h('div',{style:{fontSize:12,paddingTop:3,minHeight:20,fontStyle:gv(az,field.key)?'normal':'italic',color:gv(az,field.key)?'#1C1C1C':'#ccc'}},gv(az,field.key)||'—')))),
+        h('div',{style:{marginTop:16,paddingTop:14,borderTop:'1px solid #F0F0EC'}},h('label',{style:L},'Notes'),isAdmin?h('textarea',{style:{...I,minHeight:50,resize:'vertical',fontSize:12},placeholder:'Additional notes…',value:gn(az),onChange:e=>sn(az,e.target.value)}):h('div',{style:{fontSize:12,color:gn(az)?'#1C1C1C':'#ccc',lineHeight:1.6,fontStyle:gn(az)?'normal':'italic'}},gn(az)||'—'))
+      )
+    )
+  );
+}
+
+// ── MOODBOARD ─────────────────────────────────────────────────────────────────
+function MoodBoardTab({client,isAdmin,onUpdate}){
+  const [adding,setAdding]=useState(false);
+  const [pf,setPf]=useState({caption:'',url:'',fileData:''});
+  const [preview,setPreview]=useState(null);
+  const fRef=useRef();
+  const board=client.moodboard||[];
+  const handleFile=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setPf(p=>({...p,fileData:ev.target.result,url:''}));r.readAsDataURL(f);};
+  const add=()=>{const src=pf.fileData||pf.url;if(!src)return;onUpdate({...client,moodboard:[...board,{id:'mb'+Date.now(),src,caption:pf.caption}]});setAdding(false);setPf({caption:'',url:'',fileData:''});};
+  const del=id=>onUpdate({...client,moodboard:board.filter(x=>x.id!==id)});
+  return h('div',null,
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:20,flexWrap:'wrap',gap:10}},h('div',null,h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px'}},'Mood Board'),h('p',{style:{color:'#8A8A82',margin:0,fontSize:12}},'Inspiration images.')),isAdmin&&h('button',{onClick:()=>setAdding(true),style:BG},'＋ Add Image')),
+    board.length===0&&h('div',{style:{textAlign:'center',padding:'48px',background:'#F8F8F6',borderRadius:10,border:'2px dashed #DEDED8'}},h('div',{style:{fontSize:40,marginBottom:10}},'🌸'),h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#aaa'}},'No images yet')),
+    h('div',{className:'masonry'},board.map(img=>h('div',{key:img.id,className:'masonry-item',style:{position:'relative',borderRadius:10,overflow:'hidden',border:'1px solid #E5E5E0',cursor:'pointer'},onClick:()=>setPreview(img)},h('img',{src:img.src,alt:img.caption||'',style:{width:'100%',display:'block',objectFit:'cover'},onError:e=>{e.target.style.display='none';}}),img.caption&&h('div',{style:{padding:'6px 10px',fontSize:12,color:'#555',background:'#fff'}},img.caption),isAdmin&&h('button',{onClick:e=>{e.stopPropagation();del(img.id);},style:{position:'absolute',top:6,right:6,background:'rgba(0,0,0,0.5)',border:'none',borderRadius:'50%',width:24,height:24,cursor:'pointer',color:'#fff',fontSize:12}},'✕')))),
+    adding&&h(Modal,{title:'Add Image',onClose:()=>{setAdding(false);setPf({caption:'',url:'',fileData:''});}},h(Field,{label:'Caption (optional)'},h('input',{style:I,value:pf.caption,onChange:e=>setPf(p=>({...p,caption:e.target.value}))})),h('div',{style:{marginTop:12}},h('label',{style:L},'Upload Image'),h('button',{onClick:()=>fRef.current&&fRef.current.click(),style:{...BO,width:'100%',padding:'10px',borderStyle:'dashed'}},pf.fileData?'✓ Image selected':'📷 Choose image'),h('input',{ref:fRef,type:'file',accept:'image/*',style:{display:'none'},onChange:handleFile})),h('div',{style:{margin:'10px 0',textAlign:'center',color:'#ccc',fontSize:11}},'— or paste a URL —'),h(Field,{label:'Image URL'},h('input',{style:I,placeholder:'https://…',value:pf.url,onChange:e=>setPf(p=>({...p,url:e.target.value,fileData:''}))})),((pf.fileData||pf.url))&&h('img',{src:pf.fileData||pf.url,alt:'preview',style:{width:'100%',borderRadius:8,marginTop:10,maxHeight:160,objectFit:'cover',border:'1px solid #E5E5E0'}}),h('div',{style:{display:'flex',gap:10,marginTop:16,justifyContent:'flex-end'}},h('button',{onClick:()=>{setAdding(false);setPf({caption:'',url:'',fileData:''});},style:BO},'Cancel'),h('button',{onClick:add,style:BG},'Add'))),
+    preview&&h('div',{style:{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>setPreview(null)},h('div',{style:{maxWidth:900,position:'relative'},onClick:e=>e.stopPropagation()},h('img',{src:preview.src,alt:preview.caption,style:{maxWidth:'100%',maxHeight:'80vh',borderRadius:8,objectFit:'contain',display:'block'}}),preview.caption&&h('div',{style:{textAlign:'center',color:'#ddd',fontSize:13,marginTop:8,fontStyle:'italic'}},preview.caption),h('button',{onClick:()=>setPreview(null),style:{position:'absolute',top:-12,right:-12,background:'rgba(255,255,255,0.15)',border:'none',borderRadius:'50%',width:30,height:30,cursor:'pointer',color:'#fff',fontSize:16}},'✕')))
+  );
+}
+
+// ── BUDGET ────────────────────────────────────────────────────────────────────
+function BudgetTab({client,isAdmin,onUpdate}){
+  const [editT,setEditT]=useState(false);
+  const [tf,setTf]=useState({budget:client.budget||0,budgetPaid:client.budgetPaid||0});
+  const bl=client.budgetLines||{};
+  const upL=(sid,key,f,v)=>{const u={...bl,[sid]:{...(bl[sid]||{}),[key]:{...((bl[sid]||{})[key]||{}),[f]:v}}};onUpdate({...client,budgetLines:u});};
+  const getL=(sid,key)=>(bl[sid]||{})[key]||{vendor:'',totalCost:'',paymentDetails:'',others:'',paymentsMade:'',pendingPayments:'',customLabel:''};
+  const sT=sid=>Object.values(bl[sid]||{}).reduce((s,l)=>s+(parseFloat(l.totalCost)||0),0);
+  const gC=BUDGET_SECTIONS.reduce((s,sec)=>s+sT(sec.id),0);
+  const gP=BUDGET_SECTIONS.reduce((s,sec)=>s+Object.values(bl[sec.id]||{}).reduce((ss,l)=>ss+(parseFloat(l.paymentsMade)||0),0),0);
+  const gPn=BUDGET_SECTIONS.reduce((s,sec)=>s+Object.values(bl[sec.id]||{}).reduce((ss,l)=>ss+(parseFloat(l.pendingPayments)||0),0),0);
+  const pending=Math.max(0,(client.budget||0)-(client.budgetPaid||0));
+  const pct=client.budget?Math.round((client.budgetPaid/client.budget)*100):0;
+  const fmt=v=>'€'+(v||0).toLocaleString('es-ES',{minimumFractionDigits:2});
+  return h('div',null,
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:22,flexWrap:'wrap',gap:10}},h('div',null,h('h2',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(20px,4vw,26px)',fontWeight:300,color:'#1C1C1C',margin:'0 0 3px'}},'Budget'),h('p',{style:{color:'#8A8A82',margin:0,fontSize:12}},'Visible to team only.')),isAdmin&&h('button',{onClick:()=>{setTf({budget:client.budget||0,budgetPaid:client.budgetPaid||0});setEditT(true);},style:{...BO,fontSize:11}},'Edit Totals')),
+    h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:14,marginBottom:16}},[['Total Budget',client.budget,'#1C1C1C'],['Total Paid',client.budgetPaid,'#16a34a'],['Pending',pending,'#dc2626']].map(([l,v,col])=>h('div',{key:l,style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'18px 16px',textAlign:'center'}},h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(18px,4vw,26px)',fontWeight:400,color:col}},fmt(v)),h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:4}},l)))),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:'14px 18px',marginBottom:14}},h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:7}},h('span',{style:{fontSize:12,color:'#555'}},'Payment Progress'),h('span',{style:{fontSize:12,fontWeight:600,color:pct>=100?'#16a34a':'#d97706'}},pct+'%')),h('div',{style:{background:'#F0F0EC',borderRadius:5,height:8,overflow:'hidden'}},h('div',{style:{background:pct>=100?'#16a34a':'#1C1C1C',height:8,borderRadius:5,width:pct+'%',transition:'width 0.6s'}}))),
+    h('div',{style:{background:'#fffbeb',borderRadius:8,border:'1px solid #fde68a',padding:'10px 14px',marginBottom:16,fontSize:11,color:'#92400e',lineHeight:1.5}},'Please note that prices are based on quotes received. Total costs will fluctuate depending on final choices and guest count.'),
+    BUDGET_SECTIONS.map(section=>{const st=sT(section.id);return h('div',{key:section.id,style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',marginBottom:14,overflow:'hidden'}},
+      h('div',{style:{background:'#1C1C1C',padding:'12px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}},h('span',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#fff'}},section.label),st>0&&h('span',{style:{fontSize:12,color:'#ccc'}},fmt(st))),
+      h('div',{style:{overflowX:'auto'}},h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12,minWidth:700}},
+        h('thead',null,h('tr',{style:{background:'#F8F8F6',borderBottom:'1px solid #E5E5E0'}},['Service','Vendor','Total Cost','Payment Details','Others','Payments Made','Pending Payments'].map(hd=>h('th',{key:hd,style:{padding:'8px 12px',textAlign:'left',fontSize:10,fontWeight:600,color:'#8A8A82',letterSpacing:'0.06em',textTransform:'uppercase',whiteSpace:'nowrap'}},hd)))),
+        h('tbody',null,section.lines.map((line,idx)=>{const key=line.key+idx;const d=getL(section.id,key);return h('tr',{key,style:{borderBottom:'1px solid #F5F5F2'}},
+          h('td',{style:{padding:'7px 12px',minWidth:140}},isAdmin?h('input',{style:{...I,fontSize:11,padding:'3px 6px',background:'transparent',border:'none',borderBottom:'1px solid #E5E5E0',borderRadius:0,fontWeight:500},value:d.customLabel||line.label,onChange:e=>upL(section.id,key,'customLabel',e.target.value),placeholder:'Service name…'}):h('span',{style:{fontWeight:500,color:'#1C1C1C'}},d.customLabel||line.label||'—')),
+          ['vendor','totalCost','paymentDetails','others','paymentsMade','pendingPayments'].map(f=>h('td',{key:f,style:{padding:'6px 10px'}},isAdmin?h('input',{style:{...I,fontSize:11,padding:'3px 6px',width:f==='paymentDetails'||f==='others'?120:80},value:d[f]||'',onChange:e=>upL(section.id,key,f,e.target.value)}):h('span',{style:{fontSize:11,color:'#1C1C1C'}},d[f]||'—')))
+        );}),h('tr',{style:{background:'#F8F8F6',borderTop:'2px solid #E5E5E0'}},h('td',{colSpan:3,style:{padding:'8px 12px',fontWeight:600,fontSize:12,color:'#1C1C1C'}},'TOTAL '+section.label.toUpperCase()),h('td',{colSpan:4,style:{padding:'8px 12px',fontWeight:600,fontSize:12,color:'#1C1C1C',textAlign:'right'}},fmt(st))))
+      ))
+    );}),
+    h('div',{style:{background:'#1C1C1C',borderRadius:10,padding:'16px 20px',display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,textAlign:'center'}},[['TOTAL COST',gC,'#fff'],['TOTAL PAID',gP,'#4ADE80'],['TOTAL PENDING',gPn,'#FCA5A5']].map(([l,v,col])=>h('div',{key:l},h('div',{style:{fontSize:10,color:'#888',letterSpacing:'0.1em',marginBottom:4}},l),h('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(16px,3vw,22px)',fontWeight:400,color:col}},fmt(v))))),
+    editT&&h(Modal,{title:'Edit Budget Totals',onClose:()=>setEditT(false)},h(Field,{label:'Total Budget (€)'},h('input',{type:'number',style:I,value:tf.budget,onChange:e=>setTf(p=>({...p,budget:parseFloat(e.target.value)||0}))})),h(Field,{label:'Total Paid (€)',mt:12},h('input',{type:'number',style:I,value:tf.budgetPaid,onChange:e=>setTf(p=>({...p,budgetPaid:parseFloat(e.target.value)||0}))})),h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:()=>setEditT(false),style:BO},'Cancel'),h('button',{onClick:()=>{onUpdate({...client,budget:tf.budget,budgetPaid:tf.budgetPaid});setEditT(false);},style:BG},'Save')))
+  );
+}
+
+// ── FAMILY ────────────────────────────────────────────────────────────────────
+function FamilyTab({client,isAdmin,onUpdate}){
+  const [showAdd,setShowAdd]=useState(null);
+  const [form,setForm]=useState({name:'',relation:'',notes:''});
+  const add=side=>{onUpdate({...client,family:{...client.family,[side]:[...(client.family[side]||[]),{...form,id:'f'+Date.now()}]}});setShowAdd(null);setForm({name:'',relation:'',notes:''});};
+  return h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:20}},
+    ['bride','groom'].map(side=>h('div',{key:side},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:300,color:'#1C1C1C',margin:0}},side==='bride'?client.bride:client.groom),isAdmin&&h('button',{onClick:()=>{setShowAdd(side);setForm({name:'',relation:'',notes:''});},style:{...BG,fontSize:11,padding:'5px 12px'}},'＋ Add')),
+      (client.family[side]||[]).map(f=>h('div',{key:f.id||f.name,style:{background:'#fff',borderRadius:8,border:'1px solid #E5E5E0',padding:'10px 14px',marginBottom:8,display:'flex',justifyContent:'space-between'}},h('div',null,h('div',{style:{fontWeight:500,fontSize:13,color:'#1C1C1C'}},f.name),h('div',{style:{fontSize:11,color:'#B5977A',marginTop:2}},f.relation),f.notes&&h('div',{style:{fontSize:11,color:'#8A8A82',marginTop:3,fontStyle:'italic'}},f.notes)),isAdmin&&h('button',{onClick:()=>{const u={...client.family,[side]:(client.family[side]||[]).filter(x=>x.id!==f.id)};onUpdate({...client,family:u});},style:{background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}},'✕')))
+    )),
+    showAdd&&h(Modal,{title:'Add Family Member',onClose:()=>setShowAdd(null)},h(Field,{label:'Name'},h('input',{style:I,value:form.name,onChange:e=>setForm(p=>({...p,name:e.target.value}))})),h(Field,{label:'Relation',mt:10},h('input',{style:I,placeholder:'e.g. Mum, Brother…',value:form.relation,onChange:e=>setForm(p=>({...p,relation:e.target.value}))})),h(Field,{label:'Notes',mt:10},h('textarea',{style:{...I,minHeight:50,resize:'vertical'},value:form.notes,onChange:e=>setForm(p=>({...p,notes:e.target.value}))})),h('div',{style:{display:'flex',gap:10,marginTop:16,justifyContent:'flex-end'}},h('button',{onClick:()=>setShowAdd(null),style:BO},'Cancel'),h('button',{onClick:()=>add(showAdd),style:BG},'Add')))
+  );
+}
+
+// ── INSPECTION ────────────────────────────────────────────────────────────────
+function InspectionTab({client,isAdmin,onUpdate}){
+  const ins=client.inspection||{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]};
+  const upI=(k,v)=>onUpdate({...client,inspection:{...ins,[k]:v}});
+  const addV=()=>onUpdate({...client,inspection:{...ins,visits:[...(ins.visits||[]),{id:'v'+Date.now(),type:'Venue Visit',date:'',time:'',venue:'',address:'',notes:''}]}});
+  const delV=id=>onUpdate({...client,inspection:{...ins,visits:(ins.visits||[]).filter(v=>v.id!==id)}});
+  const upV=(id,k,v)=>onUpdate({...client,inspection:{...ins,visits:(ins.visits||[]).map(x=>x.id===id?{...x,[k]:v}:x)}});
+  return h('div',null,
+    h(SH,{title:'Inspection Visit',sub:'Pre-wedding site visits and tastings.'}),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20,marginBottom:16}},
+      h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:'0 0 14px'}},'Overview'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}},[['Inspection Dates','inspectionDates'],['Wedding Day','weddingDay'],['Who is Attending','whoAttending'],['Hotel','hotel']].map(([label,key])=>h('div',{key},h('label',{style:L},label),isAdmin?h('input',{style:I,value:ins[key]||'',onChange:e=>upI(key,e.target.value)}):h('div',{style:{fontSize:13,color:'#1C1C1C',paddingTop:3,fontStyle:'italic'}},ins[key]||'—'))))
+    ),
+    h('div',{style:{background:'#fff',borderRadius:10,border:'1px solid #E5E5E0',padding:20}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},h('h3',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,fontWeight:400,color:'#1C1C1C',margin:0}},'Schedule'),isAdmin&&h('button',{onClick:addV,style:{...BG,fontSize:11,padding:'5px 12px'}},'＋ Add Stop')),
+      (ins.visits||[]).length===0&&h('p',{style:{color:'#ccc',fontSize:12,textAlign:'center',padding:'16px 0'}},'No visits scheduled yet.'),
+      (ins.visits||[]).map(v=>h('div',{key:v.id,style:{background:'#F8F8F6',borderRadius:8,padding:'14px 16px',border:'1px solid #E5E5E0',marginBottom:10,position:'relative'}},
+        isAdmin?h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},h('div',null,h('label',{style:L},'Type'),h('select',{style:I,value:v.type,onChange:e=>upV(v.id,'type',e.target.value)},['Venue Visit','Menu Tasting','Hotel Visit','MUAH Trial','Florist Visit','Other'].map(t=>h('option',{key:t},t)))),h('div',null,h('label',{style:L},'Date & Time'),h('div',{style:{display:'flex',gap:6}},h('input',{style:I,placeholder:'3 Jan',value:v.date,onChange:e=>upV(v.id,'date',e.target.value)}),h('input',{style:{...I,width:72,flexShrink:0},placeholder:'09:00',value:v.time,onChange:e=>upV(v.id,'time',e.target.value)}))),h('div',null,h('label',{style:L},'Venue'),h('input',{style:I,value:v.venue,onChange:e=>upV(v.id,'venue',e.target.value)})),h('div',null,h('label',{style:L},'Maps Link'),h('input',{style:I,placeholder:'https://maps.google.com/…',value:v.address,onChange:e=>upV(v.id,'address',e.target.value)})),h('div',{style:{gridColumn:'1/-1'}},h('label',{style:L},'Notes'),h('input',{style:I,value:v.notes,onChange:e=>upV(v.id,'notes',e.target.value)})),h('button',{onClick:()=>delV(v.id),style:{position:'absolute',top:10,right:10,background:'none',border:'none',cursor:'pointer',color:'#ddd',fontSize:15}},'✕')):
+        h('div',null,h('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:6}},h('span',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:500,color:'#1C1C1C'}},v.type),h('span',{style:{fontSize:12,color:'#B5977A',fontWeight:500}},v.date+(v.time?' · '+v.time:''))),v.venue&&h('div',{style:{fontSize:12,color:'#1C1C1C',fontWeight:500,marginBottom:3}},v.venue),v.address&&h('a',{href:v.address.startsWith('http')?v.address:'#',target:'_blank',rel:'noreferrer',style:{fontSize:11,color:'#B5977A',textDecoration:'none'}},'📍 View on Maps'),v.notes&&h('div',{style:{fontSize:12,color:'#6A6A64',marginTop:5,fontStyle:'italic'}},v.notes))
+      ))
+    )
+  );
+}
+
+// ── NEW CLIENT ────────────────────────────────────────────────────────────────
+function NewClientModal({admins,onClose,onSave}){
+  const [f,setF]=useState({bride:'',groom:'',date:'',venue:'',location:'',adults:'',budget:'',coupleUser:'',couplePass:'',leadId:''});
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const go=()=>{if(!f.bride||!f.groom||!f.date)return;const slug=f.bride.toLowerCase()+f.groom.toLowerCase();onSave({id:slug+Date.now(),bride:f.bride,groom:f.groom,date:f.date,venue:f.venue,location:f.location,guests:{adults:parseInt(f.adults)||0},budget:parseFloat(f.budget)||0,budgetPaid:0,leadId:f.leadId||null,collaboratorIds:[],coupleUser:f.coupleUser||slug,couplePass:f.couplePass||(f.bride.slice(0,3).toLowerCase()+new Date(f.date).getFullYear()),visibleTabs:['roadmap','vendors','design','moodboard','rundown'],hiddenRoadmapIds:[],style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'',linen:'',chairs:'',glassware:'',cutlery:'',centerpiece:'',notes:''},designZones:{},moodboard:[],roadmap:JMB_ROADMAP_TEMPLATE.map((r,i)=>({...r,id:'r'+Date.now()+i})),vendors:[],rundown:{days:RUNDOWN_TEMPLATE.map(t=>({id:'d'+Date.now()+Math.random().toString(36).slice(2),label:t.label,items:t.items.map((item,idx)=>({...item,id:'i'+Date.now()+idx+Math.random().toString(36).slice(2)}))}))},setup:JSON.parse(JSON.stringify(SETUP_TEMPLATE)),inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},family:{bride:[],groom:[]},instagramHandles:{},guestCounts:{},budgetLines:{}});};
+  return h(Modal,{title:'New Client',onClose},
+    h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},h(Field,{label:"Bride's Name"},h('input',{style:I,value:f.bride,onChange:e=>set('bride',e.target.value)})),h(Field,{label:'Groom / Partner'},h('input',{style:I,value:f.groom,onChange:e=>set('groom',e.target.value)}))),
+    h(Field,{label:'Wedding Date',mt:12},h('input',{type:'date',style:I,value:f.date,onChange:e=>set('date',e.target.value)})),
+    h(Field,{label:'Venue',mt:12},h('input',{style:I,value:f.venue,onChange:e=>set('venue',e.target.value)})),
+    h(Field,{label:'Location',mt:12},h('input',{style:I,placeholder:'City, Country',value:f.location,onChange:e=>set('location',e.target.value)})),
+    h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}},h(Field,{label:'Guest Count'},h('input',{type:'number',style:I,value:f.adults,onChange:e=>set('adults',e.target.value)})),h(Field,{label:'Total Budget (€)'},h('input',{type:'number',style:I,value:f.budget,onChange:e=>set('budget',e.target.value)}))),
+    h(Field,{label:'Lead Planner',mt:12},h('select',{style:I,value:f.leadId,onChange:e=>set('leadId',e.target.value)},h('option',{value:''},'— Assign later —'),admins.map(a=>h('option',{key:a.id,value:a.id},a.name+' ('+a.role+')')))),
+    h('div',{style:{background:'#F8F8F6',borderRadius:8,padding:14,marginTop:14,border:'1px solid #E5E5E0'}},h('label',{style:L},'Couple Login'),h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:6}},h(Field,{label:'Username'},h('input',{style:I,placeholder:'e.g. caitlingus',value:f.coupleUser,onChange:e=>set('coupleUser',e.target.value.toLowerCase())})),h(Field,{label:'Password'},h('input',{style:I,placeholder:'auto-generated if blank',value:f.couplePass,onChange:e=>set('couplePass',e.target.value)})))),
+    h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},h('button',{onClick:onClose,style:BO},'Cancel'),h('button',{onClick:go,style:BG},'Create Client'))
+  );
+}
+
+// ── MOUNT ─────────────────────────────────────────────────────────────────────
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
+</script>
+</body>
+</html>
