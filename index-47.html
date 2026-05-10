@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#fff"/>
+<title>Just Married Barcelona</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F5F3;color:#1C1C1C;min-height:100vh;-webkit-font-smoothing:antialiased}
+#app{min-height:100vh}
+
+/* Fonts loaded async - fallback to system fonts first */
+.script-font{font-family:'Great Vibes',Georgia,serif}
+.serif-font{font-family:'Cormorant Garamond',Georgia,serif}
+
+/* Layout */
+.app-header{background:#fff;border-bottom:1px solid #E5E5E0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,48px);position:sticky;top:0;z-index:200}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-right{display:flex;align-items:center;gap:10px}
+.divider{width:1px;height:22px;background:#E5E5E0}
+.app-body{display:flex;flex:1;min-height:calc(100vh - 60px)}
+.sidebar{width:210px;flex-shrink:0;background:#fff;border-right:1px solid #E5E5E0;padding:16px 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+.sidebar-btn{display:block;width:100%;padding:11px 24px;border:none;background:none;cursor:pointer;font-size:13px;color:#6A6A64;text-align:left;border-left:3px solid transparent;font-family:inherit;transition:all .15s}
+.sidebar-btn:hover{color:#1C1C1C;background:#F8F8F6}
+.sidebar-btn.active{color:#1C1C1C;font-weight:600;border-left-color:#1C1C1C;background:#F8F8F6}
+.content{flex:1;min-width:0;overflow-y:auto}
+.content-inner{max-width:1060px;margin:0 auto;padding:30px clamp(16px,3vw,36px)}
+
+/* Mobile tabs */
+.tab-bar{display:none;background:#fff;border-bottom:1px solid #E5E5E0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar-inner{display:flex;min-width:max-content}
+.tab-btn{padding:12px 18px;border:none;background:none;cursor:pointer;font-size:12px;color:#8A8A82;border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;font-weight:500}
+.tab-btn.active{color:#1C1C1C;font-weight:700;border-bottom-color:#1C1C1C}
+
+/* Login */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F8F8F6}
+.login-box{width:100%;max-width:420px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .big{font-size:42px;color:#1C1C1C;line-height:1.1}
+.login-logo .sub{font-size:10px;color:#aaa;letter-spacing:.28em;text-transform:uppercase;margin-top:6px}
+.login-card{background:#fff;border-radius:14px;border:1px solid #E5E5E0;overflow:hidden;box-shadow:0 6px 32px rgba(0,0,0,.09)}
+.login-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #E5E5E0}
+.login-tab{padding:14px;border:none;background:#F8F8F6;color:#8A8A82;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:all .15s}
+.login-tab.active{background:#fff;color:#1C1C1C;font-weight:700;border-bottom-color:#1C1C1C}
+.login-body{padding:24px}
+.login-demo{margin-top:14px;background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #E5E5E0;font-size:12px;color:#6A6A64}
+.login-demo-label{font-size:10px;color:#8A8A82;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;font-weight:600}
+
+/* Forms */
+.field{margin-bottom:14px}
+.field label,.lbl{display:block;font-size:10px;font-weight:700;color:#8A8A82;margin-bottom:5px;letter-spacing:.1em;text-transform:uppercase}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid #E5E5E0;border-radius:7px;font-size:13px;font-family:inherit;color:#1C1C1C;background:#fff;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:#1C1C1C}
+textarea{resize:vertical;min-height:60px}
+input[type=color]{padding:2px;height:38px;cursor:pointer}
+input[type=checkbox]{width:auto;margin-right:6px}
+input[type=date]{color:#1C1C1C}
+
+/* Buttons */
+.btn{padding:9px 20px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:all .15s}
+.btn-dark{background:#1C1C1C;color:#fff}
+.btn-dark:hover{background:#333}
+.btn-outline{background:#fff;color:#1C1C1C;border:1.5px solid #DEDED8}
+.btn-outline:hover{background:#F8F8F6}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-full{width:100%;padding:12px}
+.btn-nude{background:none;border:none;cursor:pointer;font-family:inherit;font-size:12px;color:#aaa}
+
+/* Cards */
+.card{background:#fff;border-radius:10px;border:1px solid #E5E5E0;padding:20px;margin-bottom:16px}
+.card-dark{background:#1C1C1C;border-radius:10px;padding:16px 20px;margin-bottom:16px}
+
+/* Dashboard grid */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:#fff;border-radius:10px;border:1px solid #E5E5E0;padding:18px 16px}
+.stat-val{font-size:clamp(20px,3vw,28px);font-weight:400;color:#1C1C1C}
+.stat-label{font-size:11px;color:#8A8A82;margin-top:3px}
+.clients-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.client-card{background:#fff;border-radius:12px;border:1px solid #E5E5E0;overflow:hidden;cursor:pointer;transition:box-shadow .2s}
+.client-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.1)}
+.client-card-top{background:#1C1C1C;padding:16px 18px;position:relative}
+.client-name{font-size:22px;color:#fff;line-height:1.2}
+.client-venue{font-size:12px;color:#888;margin-top:2px}
+.client-days-badge{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.12);border-radius:14px;padding:3px 10px;font-size:11px;color:#ccc}
+.client-card-body{padding:14px 18px}
+
+/* Toggle */
+.toggle{width:38px;height:20px;border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none}
+.toggle-knob{position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+/* Status pills */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.pill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Progress bar */
+.progress-wrap{background:#F0F0EC;border-radius:5px;height:7px;overflow:hidden}
+.progress-bar{height:7px;border-radius:5px;transition:width .5s}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:#fff;border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-box.wide{max-width:720px}
+.modal-head{padding:20px 22px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #F0F0EC;position:sticky;top:0;background:#fff;z-index:1}
+.modal-title{font-size:18px;font-weight:400;color:#1C1C1C}
+.modal-body{padding:18px 22px 22px}
+.modal-close{background:none;border:none;cursor:pointer;color:#aaa;font-size:20px;line-height:1;padding:2px}
+
+/* Section heading */
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:clamp(20px,4vw,26px);font-weight:300;color:#1C1C1C;margin-bottom:2px}
+.section-sub{color:#8A8A82;font-size:12px}
+
+/* Roadmap */
+.roadmap-cat{font-size:14px;font-weight:500;color:#1C1C1C;margin:0 0 8px;padding-left:10px;border-left:2px solid #1C1C1C}
+.roadmap-item{background:#fff;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+
+/* Vendor cards */
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.vendor-card{background:#fff;border-radius:10px;border:1px solid #E5E5E0;overflow:hidden}
+.vendor-card-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E5E5E0}
+
+/* Rundown */
+.rd-grid{display:grid;grid-template-columns:70px 100px 1fr 40px;gap:6px;align-items:center}
+.rd-header-grid{display:grid;grid-template-columns:70px 100px 1fr 40px;gap:6px;padding:5px 0;border-bottom:1px solid #F0F0EC;margin-bottom:4px}
+
+/* Masonry */
+.masonry{columns:4 180px;gap:16px}
+.masonry-item{break-inside:avoid;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid #E5E5E0;cursor:pointer;position:relative}
+
+/* Budget table */
+.budget-table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
+.budget-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#8A8A82;letter-spacing:.07em;text-transform:uppercase;background:#F8F8F6;border-bottom:1px solid #E5E5E0;white-space:nowrap}
+.budget-table td{padding:7px 12px;border-bottom:1px solid #F5F5F2;vertical-align:middle}
+.budget-table input{padding:3px 6px;font-size:11px;border-radius:5px}
+
+/* Avatar */
+.avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;font-size:11px}
+
+/* Grid helpers */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.flex{display:flex;align-items:center}
+.flex-gap{gap:8px}
+.flex-between{justify-content:space-between}
+.flex-wrap{flex-wrap:wrap}
+.gap-6{gap:6px}
+.gap-10{gap:10px}
+.gap-12{gap:12px}
+.mt-10{margin-top:10px}
+.mt-12{margin-top:12px}
+.mt-14{margin-top:14px}
+.mt-16{margin-top:16px}
+.mb-8{margin-bottom:8px}
+.mb-12{margin-bottom:12px}
+.mb-16{margin-bottom:16px}
+.mb-20{margin-bottom:20px}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px}
+.text-gray{color:#8A8A82}
+.text-nude{color:#B5977A}
+.text-dark{color:#1C1C1C}
+.italic{font-style:italic}
+.bold{font-weight:600}
+.w-full{width:100%}
+.overflow-x{overflow-x:auto}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#D8D4CE;border-radius:3px}
+
+/* Animations */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeUp .18s ease}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .tab-bar{display:block}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .clients-grid{grid-template-columns:1fr}
+  .masonry{columns:2 130px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .hide-sm{display:none!important}
+}
+@media(min-width:769px){
+  .tab-bar{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app"><div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff"><div class="script-font" style="font-size:42px;color:#1C1C1C;margin-bottom:6px">Just Married</div><div style="font-size:10px;color:#aaa;letter-spacing:.28em;text-transform:uppercase;margin-bottom:28px">Barcelona</div><div style="width:32px;height:32px;border:2px solid #eee;border-top-color:#1C1C1C;border-radius:50%;animation:spin .8s linear infinite"></div></div></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// JMB WEDDING APP — Pure Vanilla JS, Zero Dependencies
+// Loads instantly. No React, No Babel, No CDN.
+// ═══════════════════════════════════════════════════════════
+'use strict';
+
+// ── Google Fonts (async, non-blocking) ───────────────────────────────────────
+(function(){
+  const l=document.createElement('link');
+  l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&family=Great+Vibes&display=swap';
+  document.head.appendChild(l);
+  l.onload=()=>{
+    document.querySelectorAll('.script-font').forEach(el=>el.style.fontFamily="'Great Vibes',cursive");
+    document.querySelectorAll('.serif-font').forEach(el=>el.style.fontFamily="'Cormorant Garamond',serif");
+  };
+})();
+
+// ── Firebase (async, non-blocking) ───────────────────────────────────────────
+let _fdb = null;
+(function(){
+  const FC={
+    apiKey:"AIzaSyBMqL0levZBF2uPOVuq5LfSiq7eLRUuU_c",
+    authDomain:"jmbapp-72410.firebaseapp.com",
+    databaseURL:"https://jmbapp-72410-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"jmbapp-72410",
+    storageBucket:"jmbapp-72410.firebasestorage.app",
+    messagingSenderId:"170797034163",
+    appId:"1:170797034163:web:efd8c5b5bc2fd3bd13dec6"
+  };
+  const load=(src,cb)=>{const s=document.createElement('script');s.src=src;s.onload=cb;s.onerror=()=>{};document.head.appendChild(s);};
+  load('https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app.js',()=>{
+    load('https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/database.js',()=>{
+      try{
+        firebase.initializeApp(FC);
+        _fdb=firebase.database();
+        // Sync with Firebase now that it's loaded
+        _syncFromFirebase();
+      }catch(e){}
+    });
+  });
+})();
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function lsGet(k){try{const v=localStorage.getItem('jmb_'+k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem('jmb_'+k,JSON.stringify(v));}catch(e){}}
+
+function dbSet(k,v){
+  lsSet(k,v);
+  if(_fdb)_fdb.ref('jmb/'+k).set(v).catch(()=>{});
+}
+
+function _syncFromFirebase(){
+  if(!_fdb)return;
+  ['admins','clients'].forEach(k=>{
+    _fdb.ref('jmb/'+k).once('value').then(s=>{
+      const v=s.val();
+      if(v&&(Array.isArray(v)?v.length>0:true)){
+        lsSet(k,v);
+        if(k==='admins') STATE.admins=v;
+        if(k==='clients'){STATE.clients=v;if(STATE.view!=='login')render();}
+      } else {
+        // Push local data to Firebase
+        const local=lsGet(k);
+        if(local) _fdb.ref('jmb/'+k).set(local).catch(()=>{});
+      }
+    }).catch(()=>{});
+    _fdb.ref('jmb/'+k).on('value',s=>{
+      const v=s.val();
+      if(v){
+        lsSet(k,v);
+        if(k==='admins') STATE.admins=v;
+        if(k==='clients'){STATE.clients=v;if(STATE.view!=='login')render();}
+      }
+    });
+  });
+}
+
+// ── Default data ──────────────────────────────────────────────────────────────
+const DEF_ADMINS=[
+  {id:'a1',username:'admin',password:'justmarried',name:'JMB Admin',role:'owner'},
+  {id:'a2',username:'anna', password:'jmb2025',   name:'Anna',     role:'planner'},
+  {id:'a3',username:'judit',password:'jmb2025',   name:'Judit',    role:'planner'},
+];
+const DEF_CLIENT={
+  id:'caitlin-gus',bride:'Caitlin',groom:'Gus',date:'2025-08-16',venue:'Xalet del Nin',
+  location:'Vilanova i la Geltrú, Barcelona',guests:{adults:77,children:2},
+  budget:117079.23,budgetPaid:109696.24,leadId:'a2',collaboratorIds:['a3'],
+  coupleUser:'caitlingus',couplePass:'xalet2025',
+  visibleTabs:['roadmap','vendors','design','moodboard','rundown'],hiddenRoadmapIds:[],
+  style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'Elevated Dinner Party · Elegant · Sophisticated',linen:'White Albero Tablecloth',chairs:'Tiffany Chair',glassware:'Power Glassware',cutlery:'Picasso Cutlery',centerpiece:'Florals, Silver Dishes & Candles.',notes:''},
+  designZones:{},moodboard:[],
+  roadmap:[
+    {id:'r1',category:'Venue',item:'Xalet del Nin',status:'confirmed',notes:'Down payment paid Dec.',dueDate:'2025-08-11',adminOnly:false},
+    {id:'r2',category:'Catering',item:'Sensacions',status:'confirmed',notes:'Last payment pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r3',category:'Florals',item:'Flors Amelia',status:'confirmed',notes:'€2,000 pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r4',category:'Photo',item:'Lara Onac Team',status:'confirmed',notes:'Next payment 2nd Aug.',dueDate:'2025-08-02',adminOnly:false},
+    {id:'r5',category:'MUAH',item:'Teresa Snowball',status:'confirmed',notes:'Paid in full.',dueDate:'2025-08-10',adminOnly:false},
+    {id:'r6',category:'Transport',item:'Dotor - Bus',status:'confirmed',notes:'Last payment July 16th.',dueDate:'2025-07-16',adminOnly:false},
+    {id:'r7',category:'Live Music',item:'Emilio - Guitar',status:'confirmed',notes:'Due wedding day.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r8',category:'Live Music',item:'Tu Musica Events',status:'confirmed',notes:'€1,300 pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r9',category:'DJ',item:'Suit & Music',status:'confirmed',notes:'€675 pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r10',category:'AV',item:'Raich',status:'confirmed',notes:'€3,960 pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r11',category:'Officiant',item:'Ludo - MC',status:'confirmed',notes:'€300 pending.',dueDate:'2025-08-16',adminOnly:false},
+    {id:'r12',category:'Stationery',item:'Menus, seating plan',status:'in-progress',notes:'Pending.',dueDate:'2025-07-01',adminOnly:false},
+    {id:'r13',category:'Transport',item:'Driverlux - Airport',status:'confirmed',notes:'Paid in full.',dueDate:'2025-08-18',adminOnly:false},
+    {id:'r14',category:'Welcome',item:'El Vivero Sitges',status:'confirmed',notes:'Rest before wedding.',dueDate:'2025-08-14',adminOnly:false},
+  ],
+  vendors:[
+    {id:'v1',cat:'Venue',name:'Xalet del Nin',social:'https://instagram.com/xaletdelnin',sType:'instagram',phone:'628.558.678',contact:'',notes:'Wedding & Pool Party',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v2',cat:'Welcome',name:'El Vivero',social:'https://instagram.com/vivero_beach_club_sitges',sType:'instagram',phone:'638.405.277',contact:'',notes:'Welcome event',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v3',cat:'Catering',name:'Sensacions',social:'https://instagram.com/sensacionsbarcelona',sType:'instagram',phone:'',contact:'Maria 685803291',notes:'All catering',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v4',cat:'Florals',name:'Flors Amelia',social:'https://instagram.com/florsamelia',sType:'instagram',phone:'',contact:'Guillem 656392656',notes:'Full floral',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v5',cat:'Photo',name:'Lara Onac Team',social:'https://instagram.com/laraonac',sType:'instagram',phone:'',contact:'',notes:'Photo + video',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v6',cat:'AV',name:'Raich',social:'https://instagram.com/raich_av',sType:'instagram',phone:'',contact:'Anna 692021442',notes:'Sound & lighting',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v7',cat:'Live Music',name:'Emilio',social:'',sType:'instagram',phone:'722331695',contact:'',notes:'Spanish guitar',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v8',cat:'Live Music',name:'Tu Musica Events',social:'https://instagram.com/tumusicaevents',sType:'instagram',phone:'660192558',contact:'',notes:'Party band',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v9',cat:'DJ',name:'Suit & Music',social:'',sType:'instagram',phone:'',contact:'Ivan',notes:'DJ',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v10',cat:'MUAH',name:'Teresa Snowball',social:'https://instagram.com/teresasnowball_co',sType:'instagram',phone:'627.638.763',contact:'',notes:'Bride + 4 ladies',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v11',cat:'Officiant',name:'Ludo',social:'https://instagram.com/ludotalks',sType:'instagram',phone:'678 540 799',contact:'',notes:'Officiant & MC',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v12',cat:'Transport',name:'Dotor',social:'',sType:'instagram',phone:'938.180.611',contact:'',notes:'Bus',confirmed:true,adminOnly:false,docs:[]},
+    {id:'v13',cat:'Transport',name:'Driverlux',social:'',sType:'instagram',phone:'',contact:'',notes:'Mini vans',confirmed:true,adminOnly:false,docs:[]},
+  ],
+  family:{bride:[{id:'b1',name:'Julie',relation:'Mum',notes:'Toast at dinner'},{id:'b2',name:'Ken',relation:'Dad',notes:'Father of bride speech'},{id:'b3',name:'Erin',relation:'Sister',notes:'Reading 2'}],groom:[{id:'g1',name:'Helen',relation:'Mum',notes:'Toast at dinner'},{id:'g2',name:'Tom',relation:'Dad',notes:''},{id:'g3',name:'Bella',relation:'Sister',notes:'H&MK'},{id:'g4',name:'Bibi, Bo, Zebi, Wilfred',relation:"Sister's kids",notes:'Ring bearers'}]},
+  rundown:{days:[]},setup:{vendorArrivals:[],areas:[]},
+  inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},
+  instagramHandles:{},guestCounts:{},budgetLines:{},
+};
+
+const JMB_ROADMAP_TEMPLATE=[
+  {category:'Venue',item:'Wedding Venue',status:'pending',notes:'Confirm availability. Request proposal & contract.',adminOnly:false},
+  {category:'Venue',item:'Welcome Event Venue',status:'pending',notes:'Confirm availability. Request proposal.',adminOnly:false},
+  {category:'Venue',item:'Post-Wedding Venue',status:'pending',notes:'Confirm availability.',adminOnly:false},
+  {category:'Hotel',item:'Hotel for wedding party',status:'pending',notes:'Block rooms.',adminOnly:false},
+  {category:'Hotel',item:'Hotel recommendations for guests',status:'pending',notes:'Send recommendations.',adminOnly:false},
+  {category:'Catering',item:'Catering Company',status:'pending',notes:'Request proposals for all events.',adminOnly:false},
+  {category:'Catering',item:'Menu Tasting',status:'pending',notes:'Schedule during inspection visit.',adminOnly:false},
+  {category:'Catering',item:'Wedding Cake / Dessert Table',status:'pending',notes:'Confirm if needed.',adminOnly:false},
+  {category:'Florals',item:'Floral Design & Decor',status:'pending',notes:'Request proposals. Send mood board.',adminOnly:false},
+  {category:'Florals',item:'Decor Rentals',status:'pending',notes:'Confirm what venue provides.',adminOnly:false},
+  {category:'Florals',item:'Stationery & Signage',status:'pending',notes:'Menus, seating plan, name cards, welcome sign.',adminOnly:false},
+  {category:'Photo',item:'Photographer',status:'pending',notes:'Request proposals. Confirm package.',adminOnly:false},
+  {category:'Photo',item:'Videographer',status:'pending',notes:'Request proposals. Confirm film.',adminOnly:false},
+  {category:'Photo',item:'Photo Booth / Content Creator',status:'pending',notes:'Confirm if needed.',adminOnly:false},
+  {category:'AV',item:'AV & Lighting Company',status:'pending',notes:'Confirm ceremony sound, dinner, dance lighting.',adminOnly:false},
+  {category:'DJ',item:'DJ',status:'pending',notes:'Request proposals. Confirm hours.',adminOnly:false},
+  {category:'Live Music',item:'Ceremony Live Music',status:'pending',notes:'Guitar / string quartet. Confirm songs.',adminOnly:false},
+  {category:'Live Music',item:'Cocktail Live Music',status:'pending',notes:'Confirm artist + setlist.',adminOnly:false},
+  {category:'Live Music',item:'Dinner / Party Band',status:'pending',notes:'Request proposals. Confirm sets.',adminOnly:false},
+  {category:'MUAH',item:'Bridal MUAH (Hair & Makeup)',status:'pending',notes:'Book trial. Confirm bride + party.',adminOnly:false},
+  {category:'MUAH',item:'MUAH Trial',status:'pending',notes:'Schedule close to wedding date.',adminOnly:false},
+  {category:'Officiant',item:'Officiant / MC',status:'pending',notes:'Confirm ceremony type. Share vow guidelines.',adminOnly:false},
+  {category:'Transport',item:'Guest Transport (bus/minivans)',status:'pending',notes:'Hotels to Venue.',adminOnly:false},
+  {category:'Transport',item:'Wedding Party Transport',status:'pending',notes:'Car/minivan for bride & party.',adminOnly:false},
+  {category:'Transport',item:'Airport Transfer (couple)',status:'pending',notes:'Confirm honeymoon departure.',adminOnly:false},
+  {category:'Legal',item:'Marriage License / Legal Documents',status:'pending',notes:'Confirm requirements in Spain.',adminOnly:true},
+  {category:'Planning',item:'Save the Date sent',status:'pending',notes:'Recommended 12+ months before.',adminOnly:false},
+  {category:'Planning',item:'Invitations sent',status:'pending',notes:'3-4 months before. Include RSVP deadline.',adminOnly:false},
+  {category:'Planning',item:'Guest list & RSVPs confirmed',status:'pending',notes:'Final headcount for catering.',adminOnly:false},
+  {category:'Planning',item:'Dietary requirements collected',status:'pending',notes:'Send to caterer.',adminOnly:false},
+  {category:'Planning',item:'Seating plan finalised',status:'pending',notes:'Once all RSVPs confirmed.',adminOnly:false},
+  {category:'Planning',item:'Final rundown shared with vendors',status:'pending',notes:'Send 2 weeks before.',adminOnly:false},
+  {category:'Inspection',item:'Inspection visit booked',status:'pending',notes:'Venue + tasting + MUAH trial.',adminOnly:false},
+  {category:'Inspection',item:'Menu tasting confirmed',status:'pending',notes:'During inspection visit.',adminOnly:false},
+  {category:'Inspection',item:'MUAH trial confirmed',status:'pending',notes:'During or close to inspection.',adminOnly:false},
+  {category:'Extras',item:'Welcome bags / favours',status:'pending',notes:'Confirm contents + budget.',adminOnly:false},
+  {category:'Extras',item:'Fireworks / Special effects',status:'pending',notes:'Confirm with venue if permitted.',adminOnly:false},
+  {category:'Extras',item:'Honeymoon transfer / logistics',status:'pending',notes:'Confirm departure details.',adminOnly:false},
+  {category:'Budget',item:'Damage deposit organised',status:'pending',notes:'Check amount and due date.',adminOnly:true},
+  {category:'Budget',item:'All contracts signed',status:'pending',notes:'Venue, caterer, florals, photo, video, AV.',adminOnly:true},
+  {category:'Budget',item:'All vendors paid in full',status:'pending',notes:'Confirm before wedding day.',adminOnly:true},
+];
+
+const RUNDOWN_TEMPLATE=[
+  {label:'DAY 1 - Welcome Event / Rehearsal',items:[
+    {time:'',who:'',action:'-- ARRIVAL @ WELCOME EVENT / REHEARSAL --'},
+    {time:'',who:'',action:'WELCOME EVENT / REHEARSAL'},
+    {time:'',who:'Bride + Girls',action:'START GETTING READY'},
+  ]},
+  {label:'DAY 2 - Wedding Day',items:[
+    {time:'',who:'',action:'-- TEAM ONE MORNING --'},
+    {time:'',who:'Bride + Girls',action:'START GETTING READY'},
+    {time:'',who:'Bride',action:'GETS DRESSED'},
+    {time:'',who:'',action:'-- TEAM TWO MORNING --'},
+    {time:'',who:'Groom + Boys',action:'START GETTING READY'},
+    {time:'',who:'',action:'-- GUESTS TRANSPORT TO VENUE --'},
+    {time:'',who:'Bus',action:'PRESENTATION - DEPARTURE'},
+    {time:'',who:'',action:'-- WELCOME --'},
+    {time:'',who:'Guests',action:'ARRIVE AT VENUE'},
+    {time:'',who:'JMB',action:'USHER GUESTS TO CEREMONY + reserved seats'},
+    {time:'',who:'',action:'-- CEREMONY --'},
+    {time:'',who:'Song 1',action:'ENTRANCE TO CEREMONY'},
+    {time:'',who:'Song 2',action:''},
+    {time:'',who:'Song 3',action:''},
+    {time:'',who:'',action:'EXCHANGE VOWS'},
+    {time:'',who:'',action:'EXCHANGE RINGS'},
+    {time:'',who:'Song',action:'RECESSION - PETAL TOSS'},
+    {time:'',who:'JMB',action:'USHER GUESTS TO COCKTAIL PARTY'},
+    {time:'',who:'',action:'-- COCKTAIL PARTY --'},
+    {time:'',who:'All',action:'GROUP PHOTOS'},
+    {time:'',who:'JMB',action:'USHER GUESTS TO RECEPTION'},
+    {time:'',who:'',action:'-- RECEPTION --'},
+    {time:'',who:'Guests',action:'ENTER DINNER HALL - TAKE SEATS'},
+    {time:'',who:'',action:'ENTRANCE TO DINNER'},
+    {time:'',who:'',action:'SPEECH 1'},
+    {time:'',who:'Caterer',action:'SERVES STARTER + MAIN'},
+    {time:'',who:'',action:'SPEECH 2'},
+    {time:'',who:'Caterer',action:'SERVES DESSERT / CAKE'},
+    {time:'',who:'JMB',action:'USHER GUESTS TO DANCE'},
+    {time:'',who:'',action:'-- DANCE --'},
+    {time:'',who:'All',action:'DANCE STARTS'},
+    {time:'',who:'',action:'MIDNIGHT SNACKS'},
+    {time:'',who:'',action:'FIRST BUS BACK'},
+    {time:'',who:'All',action:'END OF PARTY'},
+    {time:'',who:'',action:'BUS BACK'},
+  ]},
+  {label:'DAY 3 - Day 2 / Post Wedding',items:[
+    {time:'',who:'',action:'DAY 2 / POST WEDDING'},
+  ]},
+];
+
+const SETUP_TEMPLATE={vendorArrivals:[
+  {id:'sa1',time:'',vendor:'MUAH',notes:''},
+  {id:'sa2',time:'',vendor:'JMB',notes:''},
+  {id:'sa3',time:'',vendor:'Caterer',notes:''},
+  {id:'sa4',time:'',vendor:'Florist',notes:''},
+  {id:'sa5',time:'',vendor:'Stationery',notes:''},
+  {id:'sa6',time:'',vendor:'AV',notes:''},
+  {id:'sa7',time:'',vendor:'DJ',notes:''},
+  {id:'sa8',time:'',vendor:'Live Music',notes:''},
+  {id:'sa9',time:'',vendor:'Photo',notes:''},
+  {id:'sa10',time:'',vendor:'Video',notes:''},
+  {id:'sa11',time:'',vendor:'Content Creator',notes:''},
+  {id:'sa12',time:'',vendor:'Photo Booth',notes:''},
+  {id:'sa13',time:'',vendor:'Entertainment',notes:''},
+  {id:'sa14',time:'',vendor:'Fireworks',notes:''},
+],areas:[]};
+
+const JMB_LIBRARY=[
+  {name:'Xalet del Nin',cat:'Venue',social:'https://instagram.com/xaletdelnin',sType:'instagram',phone:'628.558.678',contact:''},
+  {name:'El Vivero',cat:'Welcome',social:'https://instagram.com/vivero_beach_club_sitges',sType:'instagram',phone:'638.405.277',contact:''},
+  {name:'Sensacions',cat:'Catering',social:'https://instagram.com/sensacionsbarcelona',sType:'instagram',phone:'',contact:'Maria 685803291'},
+  {name:'Flors Amelia',cat:'Florals',social:'https://instagram.com/florsamelia',sType:'instagram',phone:'',contact:'Guillem 656392656'},
+  {name:'Lara Onac Team',cat:'Photo',social:'https://instagram.com/laraonac',sType:'instagram',phone:'',contact:''},
+  {name:'Raich',cat:'AV',social:'https://instagram.com/raich_av',sType:'instagram',phone:'',contact:'Anna 692021442'},
+  {name:'Teresa Snowball',cat:'MUAH',social:'https://instagram.com/teresasnowball_co',sType:'instagram',phone:'627.638.763',contact:''},
+  {name:'Ludo',cat:'Officiant',social:'https://instagram.com/ludotalks',sType:'instagram',phone:'678 540 799',contact:''},
+  {name:'Tu Musica Events',cat:'Live Music',social:'https://instagram.com/tumusicaevents',sType:'instagram',phone:'660192558',contact:''},
+  {name:'Emilio',cat:'Live Music',social:'',sType:'instagram',phone:'722331695',contact:''},
+  {name:'Suit & Music',cat:'DJ',social:'',sType:'instagram',phone:'',contact:'Ivan'},
+  {name:'Dotor',cat:'Transport',social:'',sType:'instagram',phone:'938.180.611',contact:''},
+  {name:'Driverlux',cat:'Transport',social:'',sType:'instagram',phone:'',contact:''},
+];
+
+const STATUS={
+  confirmed:{label:'Confirmed',color:'#16a34a',bg:'#f0fdf4',border:'#86efac'},
+  'in-progress':{label:'In Progress',color:'#d97706',bg:'#fffbeb',border:'#fcd34d'},
+  pending:{label:'Pending',color:'#dc2626',bg:'#fef2f2',border:'#fca5a5'},
+  waiting:{label:'Awaiting Quote',color:'#7c3aed',bg:'#f5f3ff',border:'#c4b5fd'},
+};
+const VCATS=['Venue','Welcome','Catering','Florals','Photo','AV','Live Music','DJ','MUAH','Officiant','Transport','Other'];
+const RCATS=['Venue','Hotel','Catering','Florals','Photo','MUAH','Transport','Live Music','DJ','AV','Officiant','Stationery','Welcome','Legal','Planning','Inspection','Extras','Budget','Other'];
+const ADMIN_TABS=[{id:'roadmap',label:'Roadmap'},{id:'vendors',label:'Vendors'},{id:'setup',label:'Setup'},{id:'rundown',label:'Run Down'},{id:'design',label:'Design'},{id:'moodboard',label:'Mood Board'},{id:'budget',label:'Budget'},{id:'family',label:'Family'},{id:'inspection',label:'Inspection'}];
+const COUPLE_TABS=['roadmap','vendors','design','moodboard','rundown'];
+const BUDGET_SECTIONS=[
+  {id:'welcome',label:'Welcome / Rehearsal Dinner',lines:[{key:'venue',label:'Venue'},{key:'caterer',label:'Caterer'},{key:'photo',label:'Photo'},{key:'video',label:'Video'},{key:'extra1',label:''}]},
+  {id:'wedding',label:'Wedding Day',lines:[{key:'venue',label:'Venue'},{key:'caterer',label:'Caterer'},{key:'rentals',label:'Rentals'},{key:'floral',label:'Floral Decor'},{key:'stationery',label:'Stationery'},{key:'av',label:'AV'},{key:'dj',label:'DJ'},{key:'music1',label:'Live Music'},{key:'music2',label:'Live Music 2'},{key:'photo',label:'Photo'},{key:'video',label:'Video'},{key:'booth',label:'Photo Booth'},{key:'content',label:'Content Creator'},{key:'transGuests',label:'Transport Guests'},{key:'transParty',label:'Transport Party'},{key:'bags',label:'Welcome Bags'},{key:'extra1',label:''},{key:'extra2',label:''},{key:'extra3',label:''}]},
+  {id:'postWedding',label:'Post Wedding / Day 2',lines:[{key:'venue',label:'Venue'},{key:'caterer',label:'Caterer'},{key:'photo',label:'Photo'},{key:'video',label:'Video'},{key:'decor',label:'Decor'},{key:'extra1',label:''}]},
+  {id:'other',label:'Other Vendors & Extras',lines:[{key:'planner',label:'Wedding Planner'},{key:'extra1',label:''},{key:'extra2',label:''}]},
+];
+const DESIGN_ZONES=[{id:'welcome',label:'Welcome',icon:'🌿'},{id:'ceremony',label:'Ceremony',icon:'💐'},{id:'cocktail',label:'Cocktail',icon:'🥂'},{id:'dinner',label:'Dinner',icon:'🕯️'},{id:'dance',label:'Dance',icon:'✨'},{id:'day2',label:'Day 2',icon:'🌊'}];
+const ZONE_FIELDS={
+  welcome:[{key:'drinksStation',label:'Drinks Station'},{key:'welcomeSign',label:'Welcome Sign'},{key:'fans',label:'Fans'},{key:'parasols',label:'Parasols'},{key:'cardBox',label:'Card Box'},{key:'decor',label:'Other Decor'}],
+  ceremony:[{key:'backdrop',label:'Backdrop'},{key:'aisle',label:'Aisle'},{key:'entrance',label:'Entrance'},{key:'petals',label:'Petals'},{key:'chairs',label:'Chairs'},{key:'vowBooklets',label:'Vow Booklets'},{key:'ringBox',label:'Ring Box'}],
+  cocktail:[{key:'cocktailTables',label:'Cocktail Tables'},{key:'tablecloths',label:'Table Cloths'},{key:'chairs',label:'Chairs'},{key:'menuCards',label:'Menu Cards'},{key:'buffets',label:'Buffets'},{key:'bars',label:'Bars'},{key:'selfieMirror',label:'Selfie Mirror / Photo Booth'},{key:'lighting',label:'Lighting'},{key:'toiletryBaskets',label:'Toiletry Baskets'}],
+  dinner:[{key:'topTable',label:'Top Table'},{key:'tables',label:'Tables'},{key:'tablecloth',label:'Table Cloth'},{key:'seatingPlan',label:'Seating Plan'},{key:'menuCards',label:'Menu Cards'},{key:'namePlacement',label:'Name Placement'},{key:'tableNumbers',label:'Table Numbers'},{key:'floralsTable',label:'Florals Tables'},{key:'candles',label:'Candles'},{key:'floralsCeiling',label:'Florals Ceiling'},{key:'lighting',label:'Lighting'},{key:'chandeliers',label:'Chandeliers'},{key:'garlands',label:'Garlands'}],
+  dance:[{key:'djBooth',label:'DJ Booth'},{key:'lights',label:'Lights'},{key:'smokeMachine',label:'Smoke Machine'},{key:'decor',label:'Decor'},{key:'hangingDecor',label:'Hanging Decor'},{key:'barDecor',label:'Bar Decor'},{key:'cocktails',label:'Cocktails'},{key:'premiumLicors',label:'Premium Licors'},{key:'flipFlops',label:'Flip Flops'}],
+  day2:[{key:'venue',label:'Venue'},{key:'caterer',label:'Caterer'},{key:'decor',label:'Decor'},{key:'photo',label:'Photo'},{key:'video',label:'Video'},{key:'transport',label:'Transport'}],
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const STATE={
+  admins: lsGet('admins')||DEF_ADMINS,
+  clients: lsGet('clients')||[DEF_CLIENT],
+  session: null,
+  view:'login',         // login | dash | client | team
+  activeClientId:null,
+  activeTab:'roadmap',
+  modal:null,           // current modal config
+  collapsed:{},         // rundown day collapse state
+  activeZone:'welcome', // design tab zone
+};
+
+// Init defaults if first run
+if(!lsGet('admins')){lsSet('admins',STATE.admins);if(_fdb)_fdb.ref('jmb/admins').set(STATE.admins).catch(()=>{});}
+if(!lsGet('clients')){lsSet('clients',STATE.clients);if(_fdb)_fdb.ref('jmb/clients').set(STATE.clients).catch(()=>{});}
+
+// Restore session
+const _sv=lsGet('session');
+if(_sv){
+  if(_sv.role==='owner'||_sv.role==='planner'){const u=STATE.admins.find(x=>x.id===_sv.uid&&x.password===_sv.pw);if(u){STATE.session={role:u.role,user:u};STATE.view='dash';}}
+  else if(_sv.role==='couple'){const cl=STATE.clients.find(x=>x.id===_sv.cid&&x.coupleUser===_sv.cu);if(cl){STATE.session={role:'couple',client:cl};STATE.view='client';STATE.activeClientId=cl.id;STATE.activeTab='roadmap';}}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function uid(){return 'id'+Date.now()+Math.random().toString(36).slice(2,6);}
+function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return d;}}
+function daysTo(d){return Math.ceil((new Date(d)-new Date())/86400000);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(v){return '€'+(v||0).toLocaleString('es-ES',{minimumFractionDigits:2});}
+
+function saveClients(){
+  lsSet('clients',STATE.clients);
+  if(_fdb)_fdb.ref('jmb/clients').set(STATE.clients).catch(()=>{});
+}
+function saveAdmins(){
+  lsSet('admins',STATE.admins);
+  if(_fdb)_fdb.ref('jmb/admins').set(STATE.admins).catch(()=>{});
+}
+
+function getClient(){return STATE.clients.find(c=>c.id===STATE.activeClientId);}
+function updateClient(updated){
+  STATE.clients=STATE.clients.map(c=>c.id===updated.id?updated:c);
+  if(STATE.session&&STATE.session.client&&STATE.session.client.id===updated.id)STATE.session.client=updated;
+  saveClients();
+  render();
+}
+
+// Avatar color
+function avatarBg(name){const hue=String(name).split('').reduce((a,c)=>a+c.charCodeAt(0),0)%360;return 'hsl('+hue+',25%,45%)';}
+function avatarLetters(name){return String(name).split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+
+// ── Event delegation ──────────────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-action]');
+  if(!t)return;
+  const a=t.dataset.action;
+  const d={...t.dataset};
+  handleAction(a,d,e,t);
+});
+document.addEventListener('change',e=>{
+  const t=e.target.closest('[data-change]');
+  if(t)handleChange(t.dataset.change,t,e);
+});
+document.addEventListener('input',e=>{
+  const t=e.target.closest('[data-input]');
+  if(t)handleInput(t.dataset.input,t,e);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&STATE.modal){closeModal();render();}
+});
+document.addEventListener('close-modal',()=>{
+  if(STATE.modal){closeModal();render();}
+});
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  if(STATE.modal){
+    // Render main + overlay
+    app.innerHTML=renderMain()+renderModal();
+  } else {
+    app.innerHTML=renderMain();
+  }
+  // Apply web fonts if loaded
+  document.querySelectorAll('.script-font').forEach(el=>{
+    if(document.fonts&&document.fonts.check('1em Great Vibes'))el.style.fontFamily="'Great Vibes',cursive";
+  });
+  document.querySelectorAll('.serif-font').forEach(el=>{
+    if(document.fonts&&document.fonts.check('1em Cormorant Garamond'))el.style.fontFamily="'Cormorant Garamond',serif";
+  });
+}
+
+function renderMain(){
+  if(STATE.view==='login')return renderLogin();
+  if(STATE.view==='team')return renderTeam();
+  if(STATE.view==='dash')return renderDash();
+  if(STATE.view==='client')return renderClientView();
+  return '';
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function renderLogin(){
+  const tab=STATE._loginTab||'couple';
+  const err=STATE._loginErr||'';
+  return `
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="script-font big" style="font-size:44px;color:#1C1C1C">Just Married</div>
+      <div class="sub">Barcelona · Wedding Planning</div>
+    </div>
+    <div class="login-card">
+      <div class="login-tabs">
+        <button class="login-tab${tab==='couple'?' active':''}" data-action="login-tab" data-tab="couple">Our Wedding 💍</button>
+        <button class="login-tab${tab==='team'?' active':''}" data-action="login-tab" data-tab="team">Team Login</button>
+      </div>
+      <div class="login-body">
+        <div class="field"><label>USERNAME</label><input id="lu" type="text" placeholder="${tab==='team'?'anna · judit · admin':'couple username'}" autocomplete="username"/></div>
+        <div class="field"><label>PASSWORD</label><input id="lp" type="password" autocomplete="current-password"/></div>
+        <div class="flex flex-gap mb-12" style="margin-bottom:16px">
+          <button class="toggle" id="rem-toggle" data-action="toggle-remember" style="background:${STATE._loginRemember?'#1C1C1C':'#E5E5E0'}">
+            <div class="toggle-knob" style="left:${STATE._loginRemember?'20px':'2px'}"></div>
+          </button>
+          <span class="text-sm text-gray">Remember me</span>
+        </div>
+        ${err?`<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:8px 12px;color:#dc2626;font-size:12px;margin-bottom:14px">${esc(err)}</div>`:''}
+        <button class="btn btn-dark btn-full" data-action="login">${tab==='couple'?'ACCESS MY WEDDING →':'SIGN IN →'}</button>
+      </div>
+    </div>
+    <div class="login-demo">
+      <div class="login-demo-label">Demo</div>
+      ${tab==='couple'?'caitlingus / xalet2025':'admin / justmarried (Owner)<br>anna / jmb2025 &nbsp;·&nbsp; judit / jmb2025 (Planners)'}
+    </div>
+  </div>
+</div>`;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDash(){
+  const isOwner=STATE.session.role==='owner';
+  const myClients=isOwner?STATE.clients:STATE.clients.filter(c=>c.leadId===STATE.session.user.id||(c.collaboratorIds||[]).includes(STATE.session.user.id));
+  const u=STATE.session.user;
+
+  let statsHtml='';
+  if(isOwner){
+    const total=STATE.clients.length;
+    const y25=STATE.clients.filter(c=>c.date&&c.date.startsWith('2025')).length;
+    const rev='€'+STATE.clients.reduce((a,c)=>a+(c.budget||0),0).toLocaleString('es-ES',{maximumFractionDigits:0});
+    const pend='€'+STATE.clients.reduce((a,c)=>a+Math.max(0,(c.budget||0)-(c.budgetPaid||0)),0).toLocaleString('es-ES',{maximumFractionDigits:0});
+    statsHtml=`<div class="stats-row mb-20">
+      ${[['Clients',total],['Weddings 2025',y25],['Revenue',rev],['Pending',pend]].map(([l,v])=>`<div class="stat-card"><div class="serif-font stat-val">${v}</div><div class="stat-label">${l}</div></div>`).join('')}
+    </div>`;
+  }
+
+  const cardsHtml=myClients.length===0?`<div class="card" style="text-align:center;padding:48px"><div style="font-size:36px;margin-bottom:12px">💍</div><div class="serif-font" style="font-size:22px;color:#aaa;font-weight:300">No weddings assigned yet</div></div>`:
+  `<div class="clients-grid">${myClients.map(c=>{
+    const lead=STATE.admins.find(a=>a.id===c.leadId);
+    const tv=(c.vendors||[]).length,cv=(c.vendors||[]).filter(v=>v.confirmed).length,pct=tv?Math.round(cv/tv*100):0;
+    const days=daysTo(c.date);
+    return `<div class="client-card" data-action="open-client" data-id="${esc(c.id)}">
+      <div class="client-card-top">
+        <div class="script-font client-name">${esc(c.bride)} & ${esc(c.groom)}</div>
+        <div class="client-venue">${esc(c.venue)}</div>
+        <div class="client-days-badge">${days>0?days+'d':days===0?'Today':'Past'}</div>
+      </div>
+      <div class="client-card-body">
+        <div class="flex flex-between text-sm text-gray mb-8">
+          <span>${fmtDate(c.date)}</span>
+          <span>${c.guests&&c.guests.adults?c.guests.adults+' guests':''}</span>
+        </div>
+        ${lead?`<div class="flex flex-gap mb-12" style="background:#F8F8F6;border:1px solid #E5E5E0;border-radius:8px;padding:6px 10px">
+          <div class="avatar" style="width:20px;height:20px;background:${avatarBg(lead.name)};font-size:9px">${avatarLetters(lead.name)}</div>
+          <span style="font-size:11px;color:#555">${esc(lead.name)}</span>
+          <span style="font-size:10px;color:#B5977A;margin-left:auto">Lead</span>
+        </div>`:''}
+        ${tv>0?`<div class="flex flex-between" style="font-size:11px;color:#8A8A82;margin-bottom:5px"><span>Vendors confirmed</span><span style="color:${pct>=100?'#16a34a':pct>=50?'#d97706':'#dc2626'};font-weight:700">${cv}/${tv}</span></div>
+        <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${pct>=100?'#16a34a':'#1C1C1C'}"></div></div>`:''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  return `
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  <header class="app-header">
+    <div class="header-left">
+      <span class="script-font" style="font-size:24px;color:#1C1C1C">Just Married</span>
+      <div class="divider"></div>
+      <span class="hide-sm text-xs text-gray" style="text-transform:uppercase;letter-spacing:.08em">${isOwner?'Dashboard':'My Weddings'}</span>
+    </div>
+    <div class="header-right">
+      <div class="avatar" style="width:30px;height:30px;background:${avatarBg(u.name)};font-size:11px">${avatarLetters(u.name)}</div>
+      <span class="hide-sm text-sm text-gray">${esc(u.name)}</span>
+      ${isOwner?`<button class="btn btn-outline btn-sm" data-action="go-team">Team</button>`:''}
+      <button class="btn-nude" data-action="logout">Log out</button>
+    </div>
+  </header>
+  <div class="content-inner" style="max-width:1200px;padding-top:32px">
+    <div class="flex flex-between flex-wrap gap-10 mb-20">
+      <div>
+        <h1 class="serif-font section-title">${isOwner?'All Weddings':'My Weddings'}</h1>
+        <p class="section-sub">${myClients.length} client${myClients.length!==1?'s':''}</p>
+      </div>
+      ${isOwner?`<button class="btn btn-dark" data-action="new-client">+ New Client</button>`:''}
+    </div>
+    ${statsHtml}
+    ${cardsHtml}
+  </div>
+</div>`;
+}
+
+// ── CLIENT VIEW ───────────────────────────────────────────────────────────────
+function renderClientView(){
+  const cl=getClient();
+  if(!cl)return renderDash();
+  const isCouple=STATE.session.role==='couple';
+  const isAdmin=!isCouple;
+  const tabs=isCouple?ADMIN_TABS.filter(t=>(cl.visibleTabs||[]).includes(t.id)):ADMIN_TABS;
+  const tab=STATE.activeTab;
+  const lead=STATE.admins.find(a=>a.id===cl.leadId);
+  const days=daysTo(cl.date);
+
+  const sidebarHtml=`<nav class="sidebar">${tabs.map(t=>`<button class="sidebar-btn${tab===t.id?' active':''}" data-action="set-tab" data-tab="${t.id}">${t.label}</button>`).join('')}</nav>`;
+
+  const tabBarHtml=`<div class="tab-bar"><div class="tab-bar-inner">${tabs.map(t=>`<button class="tab-btn${tab===t.id?' active':''}" data-action="set-tab" data-tab="${t.id}">${t.label}</button>`).join('')}</div></div>`;
+
+  const headerLeft=isCouple?
+    `<span class="script-font" style="font-size:24px;color:#1C1C1C">${esc(cl.bride)} & ${esc(cl.groom)}</span>`:
+    `<button class="btn-nude" data-action="go-back" style="color:#1C1C1C;font-size:13px">&#8592; Back</button>
+     <div class="divider"></div>
+     <span class="script-font" style="font-size:22px;color:#1C1C1C">${esc(cl.bride)} & ${esc(cl.groom)}</span>
+     <span class="hide-sm text-xs text-gray">${esc(cl.venue)}</span>`;
+
+  const headerRight=`
+    ${lead&&isAdmin?`<div class="flex flex-gap hide-sm"><div class="avatar" style="width:22px;height:22px;background:${avatarBg(lead.name)};font-size:9px">${avatarLetters(lead.name)}</div><span class="text-xs text-gray">${esc(lead.name)}</span></div>`:''}
+    <div style="text-align:right;line-height:1">
+      <div class="serif-font" style="font-size:22px;font-weight:400;color:#1C1C1C">${days>0?days:0}</div>
+      <div style="font-size:9px;color:#8A8A82;letter-spacing:.1em;text-transform:uppercase">days</div>
+    </div>
+    <button class="btn-nude" data-action="logout">Log out</button>`;
+
+  return `
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  <header class="app-header">
+    <div class="header-left">${headerLeft}</div>
+    <div class="header-right">${headerRight}</div>
+  </header>
+  <div class="app-body">
+    ${sidebarHtml}
+    <div class="content">
+      ${tabBarHtml}
+      <div class="content-inner fade-in">
+        ${renderTab(cl,tab,isAdmin)}
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function renderTab(cl,tab,isAdmin){
+  switch(tab){
+    case 'roadmap':    return renderRoadmap(cl,isAdmin);
+    case 'vendors':    return renderVendors(cl,isAdmin);
+    case 'setup':      return renderSetup(cl,isAdmin);
+    case 'rundown':    return renderRundown(cl,isAdmin);
+    case 'design':     return renderDesign(cl,isAdmin);
+    case 'moodboard':  return renderMoodboard(cl,isAdmin);
+    case 'budget':     return renderBudget(cl,isAdmin);
+    case 'family':     return renderFamily(cl,isAdmin);
+    case 'inspection': return renderInspection(cl,isAdmin);
+    default: return '';
+  }
+}
+
+// ── ROADMAP ───────────────────────────────────────────────────────────────────
+function renderRoadmap(cl,isAdmin){
+  const visible=isAdmin?(cl.roadmap||[]):(cl.roadmap||[]).filter(r=>!r.adminOnly&&!(cl.hiddenRoadmapIds||[]).includes(r.id));
+  const cats=RCATS.filter(c=>visible.some(r=>r.category===c));
+  const counts={};Object.keys(STATUS).forEach(k=>counts[k]=visible.filter(r=>r.status===k).length);
+  const tv=(cl.vendors||[]).length,cv=(cl.vendors||[]).filter(v=>v.confirmed).length,vpct=tv?Math.round(cv/tv*100):0;
+
+  const pills=Object.entries(STATUS).filter(([k])=>counts[k]>0).map(([k,s])=>`
+    <div class="pill" style="background:${s.bg};border:1px solid ${s.border}">
+      <div class="pill-dot" style="background:${s.color}"></div>
+      <span style="color:${s.color}">${counts[k]}</span>
+      <span style="color:#555">${s.label}</span>
+    </div>`).join('');
+
+  const vpBar=tv>0?`<div class="card" style="margin-bottom:18px">
+    <div class="flex flex-between mb-8"><span class="text-sm bold">Vendors confirmed</span><span class="text-sm bold" style="color:${vpct>=100?'#16a34a':vpct>=50?'#d97706':'#dc2626'}">${cv}/${tv}</span></div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:${vpct}%;background:${vpct>=100?'#16a34a':'#1C1C1C'}"></div></div>
+    <div class="flex flex-between mt-10 text-xs text-gray"><span>${vpct}% locked in</span>${vpct>=100?'<span style="color:#16a34a;font-weight:700">All confirmed!</span>':'<span>'+(tv-cv)+' pending</span>'}</div>
+  </div>`:'';
+
+  const catsHtml=cats.length===0?`<div class="card" style="text-align:center;padding:48px"><div style="font-size:32px;margin-bottom:10px">📋</div><div class="serif-font" style="font-size:18px;color:#aaa;font-weight:300">No roadmap items yet</div></div>`:
+  cats.map(cat=>`
+    <div style="margin-bottom:18px">
+      <div class="roadmap-cat serif-font">${cat}</div>
+      ${visible.filter(r=>r.category===cat).map(r=>{const s=STATUS[r.status]||STATUS.pending;return `
+        <div class="roadmap-item" style="border:1px solid ${s.border}">
+          <div class="flex flex-gap" style="flex:1">
+            <div class="pill-dot" style="background:${s.color};margin-top:5px;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:13px">${esc(r.item)}${isAdmin&&r.adminOnly?'<span style="font-size:9px;background:#f0f0ff;color:#7c3aed;padding:1px 6px;border-radius:5px;margin-left:6px">Admin</span>':''}</div>
+              ${r.notes?`<div class="text-xs" style="color:#6A6A64;margin-top:2px;line-height:1.5">${esc(r.notes)}</div>`:''}
+              ${r.dueDate?`<div class="text-xs text-gray" style="margin-top:2px">Due: ${fmtDate(r.dueDate)}</div>`:''}
+            </div>
+          </div>
+          <div class="flex flex-gap" style="flex-shrink:0">
+            <span class="pill text-xs" style="background:${s.bg};color:${s.color};border:1px solid ${s.border}">${s.label}</span>
+            ${isAdmin?`<button class="btn-nude" data-action="edit-roadmap-item" data-id="${esc(r.id)}" style="color:#B5977A;font-size:14px;padding:0 2px">✎</button>
+            <button class="btn-nude" data-action="del-roadmap-item" data-id="${esc(r.id)}" style="font-size:14px;padding:0 2px">✕</button>`:''}
+          </div>
+        </div>`}).join('')}
+    </div>`).join('');
+
+  return `
+    <div class="section-head">
+      <div>
+        <h2 class="serif-font section-title">Roadmap</h2>
+        <p class="section-sub">Track all vendors and milestones.</p>
+      </div>
+      ${isAdmin?`<button class="btn btn-dark btn-sm" data-action="add-roadmap-item">+ Add Item</button>`:''}
+    </div>
+    <div class="flex flex-gap flex-wrap mb-16">${pills}</div>
+    ${vpBar}${catsHtml}`;
+}
+
+// ── VENDORS ───────────────────────────────────────────────────────────────────
+function renderVendors(cl,isAdmin){
+  const filter=STATE._vendorFilter||'All';
+  const visible=isAdmin?(cl.vendors||[]):(cl.vendors||[]).filter(v=>!v.adminOnly);
+  const filtered=filter==='All'?visible:visible.filter(v=>v.cat===filter);
+  const activeCats=VCATS.filter(c=>visible.some(v=>v.cat===c));
+  const grouped={};VCATS.forEach(cat=>{const items=filtered.filter(v=>v.cat===cat);if(items.length)grouped[cat]=items;});
+
+  const filterBtns=['All',...activeCats].map(c=>`<button class="btn ${filter===c?'btn-dark':'btn-outline'} btn-sm" data-action="vendor-filter" data-cat="${esc(c)}">${c}</button>`).join('');
+
+  const groups=Object.entries(grouped).map(([cat,vendors])=>`
+    <div style="margin-bottom:22px">
+      <div class="roadmap-cat serif-font">${cat}</div>
+      <div class="vendor-grid">${vendors.map(v=>{const dc=(v.docs||[]).length;return `
+        <div class="vendor-card">
+          <div class="vendor-card-head" style="background:${v.confirmed?'#f0fdf4':'#fffbeb'}">
+            <span style="font-weight:600;font-size:13px">${esc(v.name)}</span>
+            <span class="text-xs bold" style="color:${v.confirmed?'#16a34a':'#d97706'};background:${v.confirmed?'#dcfce7':'#fef9c3'};padding:2px 8px;border-radius:7px">${v.confirmed?'Confirmed':'Pending'}</span>
+          </div>
+          <div style="padding:10px 14px">
+            ${v.social?`<div style="margin-bottom:6px"><a href="${esc(v.social.startsWith('http')?v.social:'https://instagram.com/'+v.social.replace('@',''))}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#6B6B64;text-decoration:none;background:#F5F5F2;padding:3px 10px;border-radius:14px;border:1px solid #E5E5E0">📸 ${esc(v.sType||'instagram')}</a></div>`:''}
+            ${v.phone?`<div class="text-xs" style="margin-bottom:3px">📞 ${esc(v.phone)}</div>`:''}
+            ${v.contact?`<div class="text-xs" style="margin-bottom:3px">👤 ${esc(v.contact)}</div>`:''}
+            ${v.notes?`<div class="text-xs text-gray italic" style="border-top:1px solid #F5F5F2;padding-top:6px;margin-top:4px">${esc(v.notes)}</div>`:''}
+            ${dc>0||isAdmin?`<button class="btn btn-outline btn-sm w-full" style="margin-top:8px;border-color:#B5977A;color:#B5977A" data-action="open-docs" data-id="${esc(v.id)}">📄 ${dc>0?dc+' doc'+(dc!==1?'s':''):'Documents & Quotes'}</button>`:''}
+            ${isAdmin?`<div class="flex flex-gap mt-10">
+              <button class="btn btn-outline btn-sm" style="flex:1" data-action="edit-vendor" data-id="${esc(v.id)}">Edit</button>
+              <button class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fca5a5" data-action="del-vendor" data-id="${esc(v.id)}">✕</button>
+            </div>`:''}
+          </div>
+        </div>`}).join('')}</div>
+    </div>`).join('');
+
+  return `
+    <div class="section-head">
+      <div><h2 class="serif-font section-title">Vendors</h2></div>
+      ${isAdmin?`<div class="flex flex-gap">
+        <button class="btn btn-outline btn-sm" data-action="open-library">📚 Library</button>
+        <button class="btn btn-dark btn-sm" data-action="add-vendor">+ Add</button>
+      </div>`:''}
+    </div>
+    <div class="flex flex-gap flex-wrap mb-16">${filterBtns}</div>
+    ${visible.length===0?`<div class="card" style="text-align:center;padding:48px"><div style="font-size:32px;margin-bottom:10px">🏢</div><div class="serif-font" style="font-size:18px;color:#aaa;font-weight:300">No vendors yet</div></div>`:groups}`;
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function renderSetup(cl,isAdmin){
+  const setup=cl.setup||{vendorArrivals:[],areas:[]};
+  const areasOrder=['Welcome / Rehearsal','Ceremony','Aperitif','Dinner','Dance'];
+
+  const arrivalsHtml=(setup.vendorArrivals||[]).map(v=>isAdmin?
+    `<div class="flex flex-gap flex-wrap" style="margin-bottom:6px">
+      <input style="width:76px;flex-shrink:0" placeholder="10:30" value="${esc(v.time)}" data-input="arrival-time" data-id="${esc(v.id)}"/>
+      <input style="flex:1;min-width:120px" placeholder="Vendor" value="${esc(v.vendor)}" data-input="arrival-vendor" data-id="${esc(v.id)}"/>
+      <input style="flex:2;min-width:160px" placeholder="Notes..." value="${esc(v.notes)}" data-input="arrival-notes" data-id="${esc(v.id)}"/>
+      <button class="btn-nude" data-action="del-arrival" data-id="${esc(v.id)}">✕</button>
+    </div>`:
+    `<div class="flex flex-gap" style="padding:7px 0;border-bottom:1px solid #F5F5F2">
+      <span style="width:60px;color:#B5977A;font-weight:600;font-size:12px;flex-shrink:0">${esc(v.time)}</span>
+      <span style="min-width:100px;font-size:12px;font-weight:500">${esc(v.vendor)}</span>
+      <span class="text-xs text-gray">${esc(v.notes)}</span>
+    </div>`).join('');
+
+  const areasHtml=areasOrder.map(area=>{
+    const items=(setup.areas||[]).filter(a=>a.area===area);
+    return `<div class="card" style="margin-bottom:12px">
+      <div class="flex flex-between mb-12">
+        <h4 class="serif-font" style="font-size:15px;font-weight:400;padding-left:8px;border-left:2px solid #1C1C1C">${area}</h4>
+        ${isAdmin?`<button class="btn btn-outline btn-sm" data-action="add-area-item" data-area="${esc(area)}">+</button>`:''}
+      </div>
+      ${items.length===0?`<p class="text-xs text-gray">No setup notes.</p>`:''}
+      ${items.map(a=>isAdmin?
+        `<div class="flex flex-gap" style="margin-bottom:5px">
+          <input style="width:100px;flex-shrink:0;font-size:11px" placeholder="Vendor" value="${esc(a.vendor)}" data-input="area-vendor" data-id="${esc(a.id)}"/>
+          <input style="flex:1;font-size:11px" placeholder="Description..." value="${esc(a.notes)}" data-input="area-notes" data-id="${esc(a.id)}"/>
+          <button class="btn-nude" data-action="del-area-item" data-id="${esc(a.id)}">✕</button>
+        </div>`:
+        `<div class="flex flex-gap" style="padding-bottom:4px;border-bottom:1px solid #F5F5F2">
+          <span style="width:80px;color:#6A6A64;font-size:12px;font-weight:500;flex-shrink:0">${esc(a.vendor)}</span>
+          <span style="font-size:12px">${esc(a.notes)}</span>
+        </div>`).join('')}
+    </div>`;}).join('');
+
+  const igHandles=[['Bride','bride'],['Groom','groom'],['Wedding Planner','planner'],['Wedding Dress','dress'],['Suit','suit'],['Jewellery','jewellery'],['Venue','venue'],['Floral Design','florist'],['Stationery','stationery'],['AV Company','av'],['DJ','dj'],['Live Music','music'],['Photo','photo'],['Video','video'],['Content Creator','content']];
+
+  return `
+    <div class="section-head"><h2 class="serif-font section-title">Setup & Arrivals</h2></div>
+    <div class="card mb-16">
+      <div class="flex flex-between mb-12">
+        <h3 class="serif-font" style="font-size:17px;font-weight:400">Vendor Arrival Times</h3>
+        ${isAdmin?`<button class="btn btn-dark btn-sm" data-action="add-arrival">+ Add</button>`:''}
+      </div>
+      ${(setup.vendorArrivals||[]).length===0?`<p class="text-xs text-gray">No arrivals yet.</p>`:''}
+      ${arrivalsHtml}
+    </div>
+    ${areasHtml}
+    <div class="card">
+      <h3 class="serif-font mb-16" style="font-size:16px;font-weight:400">Instagram Handles</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+        ${igHandles.map(([label,key])=>`
+          <div>
+            <label class="lbl">${label}</label>
+            ${isAdmin?`<input placeholder="@handle" value="${esc((cl.instagramHandles||{})[key]||'')}" data-input="ig-handle" data-key="${key}"/>`:
+            `<div style="font-size:12px;padding-top:3px;min-height:20px">${(cl.instagramHandles||{})[key]?`<a href="https://instagram.com/${esc(((cl.instagramHandles||{})[key]||'').replace('@',''))}" target="_blank" style="color:#B5977A;text-decoration:none">${esc((cl.instagramHandles||{})[key])}</a>`:'<span style="color:#ddd">—</span>'}</div>`}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── RUNDOWN ───────────────────────────────────────────────────────────────────
+function renderRundown(cl,isAdmin){
+  const rd=cl.rundown||{days:[]};
+  const isHdr=a=>a&&a.startsWith('--');
+
+  const daysHtml=(rd.days||[]).map(day=>{
+    const col=STATE.collapsed&&STATE.collapsed[day.id];
+    return `
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div class="flex flex-between" style="padding:13px 18px;background:#FAFAFA;border-bottom:${col?'none':'1px solid #F0F0EC'};cursor:pointer" data-action="toggle-day" data-id="${esc(day.id)}">
+          <div class="flex flex-gap" style="flex:1">
+            <span style="font-size:12px;color:#8A8A82;display:inline-block;transform:rotate(${col?'-90deg':'0deg'});transition:transform .2s">▼</span>
+            ${isAdmin?`<input style="border:none;background:transparent;font-size:15px;padding:0;flex:1;color:#1C1C1C;font-weight:500" value="${esc(day.label)}" data-input="day-label" data-id="${esc(day.id)}" onclick="event.stopPropagation()"/>`:
+            `<span style="font-size:15px;font-weight:500">${esc(day.label)}</span>`}
+          </div>
+          <div class="flex flex-gap" onclick="event.stopPropagation()">
+            ${isAdmin?`<button class="btn btn-outline btn-sm" data-action="add-rundown-item" data-dayid="${esc(day.id)}">+ Line</button>
+            <button class="btn-nude" data-action="del-day" data-id="${esc(day.id)}">✕</button>`:''}
+            <span class="text-xs text-gray">${(day.items||[]).length}</span>
+          </div>
+        </div>
+        ${col?'':renderDayItems(day,isAdmin)}
+      </div>`;}).join('');
+
+  return `
+    <div class="section-head">
+      <div><h2 class="serif-font section-title">Run Down</h2><p class="section-sub">Day-by-day schedule.</p></div>
+      ${isAdmin?`<button class="btn btn-outline btn-sm" data-action="add-day">+ Add Day</button>`:''}
+    </div>
+    ${(rd.days||[]).length===0?`<div class="card" style="text-align:center;padding:48px;border:2px dashed #DEDED8;background:#F8F8F6">
+      <div style="font-size:32px;margin-bottom:10px">📋</div>
+      <div class="serif-font" style="font-size:18px;color:#aaa;font-weight:300">No schedule yet</div>
+    </div>`:''}
+    ${daysHtml}`;
+}
+
+function renderDayItems(day,isAdmin){
+  const isHdr=a=>a&&a.startsWith('--');
+  if(!isAdmin){
+    return `<div style="padding:8px 18px 14px">${(day.items||[]).map(item=>isHdr(item.action)?
+      `<div style="padding:12px 0 3px;border-top:1px solid #E5E5E0;margin-top:6px"><span style="font-size:10px;font-weight:700;color:#8A8A82;letter-spacing:.14em;text-transform:uppercase">${esc(item.action.replace(/--/g,'').trim())}</span></div>`:
+      `<div class="flex flex-gap" style="padding:8px 0;border-bottom:1px solid #F8F8F8">
+        <span style="width:60px;color:#B5977A;font-weight:600;font-size:12px;flex-shrink:0">${esc(item.time)}</span>
+        ${item.who?`<span style="width:90px;color:#6A6A64;font-size:11px;flex-shrink:0;font-style:italic">${esc(item.who)}</span>`:''}
+        <span style="font-size:12px;flex:1;line-height:1.4">${esc(item.action)}</span>
+      </div>`).join('')}</div>`;
+  }
+  return `<div style="padding:8px 18px 14px">
+    <div class="rd-header-grid"><span class="text-xs text-gray" style="font-weight:700;text-transform:uppercase;letter-spacing:.1em">Time</span><span class="text-xs text-gray" style="font-weight:700;text-transform:uppercase;letter-spacing:.1em">Who</span><span class="text-xs text-gray" style="font-weight:700;text-transform:uppercase;letter-spacing:.1em">Action</span><span></span></div>
+    ${(day.items||[]).map((item,idx)=>`
+      <div class="rd-grid" style="margin-bottom:3px;background:${isHdr(item.action)?'#F8F8F6':'transparent'};border-radius:${isHdr(item.action)?'5px':'0'};padding:${isHdr(item.action)?'2px 4px':'0'}">
+        <input style="font-size:11px;padding:4px 7px;background:${isHdr(item.action)?'#F0F0EC':'#fff'}" placeholder="18:00" value="${esc(item.time)}" data-input="item-time" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}"/>
+        <input style="font-size:11px;padding:4px 7px;background:${isHdr(item.action)?'#F0F0EC':'#fff'}" placeholder="JMB..." value="${esc(item.who)}" data-input="item-who" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}"/>
+        <input style="font-size:11px;padding:4px 7px;background:${isHdr(item.action)?'#F0F0EC':'#fff'};font-weight:${isHdr(item.action)?700:400}" value="${esc(item.action)}" data-input="item-action" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}"/>
+        <div class="flex flex-gap" style="gap:1px">
+          <button style="background:none;border:none;cursor:${idx===0?'default':'pointer'};color:${idx===0?'#F0F0EC':'#aaa'};font-size:11px;padding:2px" data-action="move-item" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}" data-dir="-1">↑</button>
+          <button style="background:none;border:none;cursor:${idx===(day.items||[]).length-1?'default':'pointer'};color:${idx===(day.items||[]).length-1?'#F0F0EC':'#aaa'};font-size:11px;padding:2px" data-action="move-item" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}" data-dir="1">↓</button>
+          <button style="background:none;border:none;cursor:pointer;color:#ddd;font-size:12px;padding:2px" data-action="del-item" data-dayid="${esc(day.id)}" data-iid="${esc(item.id)}">✕</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ── DESIGN ────────────────────────────────────────────────────────────────────
+function renderDesign(cl,isAdmin){
+  const s=cl.style||{};
+  const zones=cl.designZones||{};
+  const palette=s.palette||['#1C1C1C','#F5F0E8','#B5977A'];
+  const az=STATE.activeZone||'welcome';
+  const cz=DESIGN_ZONES.find(z=>z.id===az)||DESIGN_ZONES[0];
+  const gv=(z,k)=>((zones[z]||{}).fields||{})[k]||'';
+  const gn=z=>(zones[z]||{}).notes||'';
+
+  const paletteHtml=palette.map((c,i)=>`
+    <div style="text-align:center;position:relative">
+      <div style="width:58px;height:58px;border-radius:9px;background:${c};border:1.5px solid rgba(0,0,0,.08);box-shadow:0 3px 10px rgba(0,0,0,.1);margin-bottom:4px;position:relative;overflow:hidden">
+        ${isAdmin?`<input type="color" value="${c}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" data-input="palette-color" data-idx="${i}"/>`:''}
+      </div>
+      <div style="font-size:9px;color:#8A8A82">${c.toUpperCase()}</div>
+      ${isAdmin?`<button class="btn-nude" data-action="del-palette" data-idx="${i}" style="position:absolute;top:-4px;right:-4px;width:15px;height:15px;border-radius:50%;background:#dc2626;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;cursor:pointer">✕</button>`:''}
+    </div>`).join('');
+
+  const zoneTabsHtml=DESIGN_ZONES.map(z=>`
+    <button style="padding:10px 15px;border:none;background:${az===z.id?'#fff':'transparent'};border-bottom:2px solid ${az===z.id?'#1C1C1C':'transparent'};cursor:pointer;font-size:12px;font-weight:${az===z.id?700:400};color:${az===z.id?'#1C1C1C':'#8A8A82'};white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;font-family:inherit" data-action="set-zone" data-zone="${z.id}">${z.icon} ${z.label}</button>`).join('');
+
+  const zoneFieldsHtml=(ZONE_FIELDS[az]||[]).map(f=>`
+    <div>
+      <label class="lbl">${f.label}</label>
+      ${isAdmin?`<input value="${esc(gv(az,f.key))}" data-input="zone-field" data-zone="${az}" data-key="${f.key}"/>`:
+      `<div style="font-size:12px;padding-top:3px;min-height:20px;font-style:${gv(az,f.key)?'normal':'italic'};color:${gv(az,f.key)?'#1C1C1C':'#ccc'}">${esc(gv(az,f.key))||'—'}</div>`}
+    </div>`).join('');
+
+  const partyFlorals=[['Bride Bouquet','brideBouquet'],["Bridesmaids' Bouquets",'bridesmaidsBouquet'],['Groom Boutonniere','groomBout'],['Groomsmen Boutonnieres','groomsmenBout'],['Flower Girls','flowerGirls'],['Page Boys','pageBoys'],["Parents' Flowers",'parentFlowers'],['Ring Box','ringBox']];
+
+  return `
+    <div class="section-head"><h2 class="serif-font section-title">Design</h2></div>
+    <div class="card mb-16">
+      <div class="flex flex-between mb-16"><h3 class="serif-font" style="font-size:16px;font-weight:400">Colour Palette</h3>${isAdmin?'<span class="text-xs text-gray">Click swatch to edit</span>':''}</div>
+      <div class="flex flex-gap flex-wrap">
+        ${paletteHtml}
+        ${isAdmin?`<div style="text-align:center">
+          <div class="text-xs text-gray mb-8" style="font-weight:700;text-transform:uppercase;letter-spacing:.1em">Add</div>
+          <div class="flex flex-gap">
+            <div style="position:relative;width:38px;height:38px;border-radius:7px;border:1.5px dashed #DEDED8;overflow:hidden;background:${STATE._newColor||'#B5977A'}">
+              <input type="color" value="${STATE._newColor||'#B5977A'}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" data-input="new-color"/>
+            </div>
+            <button class="btn btn-dark btn-sm" data-action="add-palette">+</button>
+          </div>
+        </div>`:''}
+      </div>
+    </div>
+    <div class="card mb-16">
+      <h3 class="serif-font mb-12" style="font-size:16px;font-weight:400">Style & Mood</h3>
+      ${isAdmin?`<textarea placeholder="e.g. Elegant · Sophisticated · Classic with modern twist..." data-input="mood" style="min-height:50px">${esc(s.mood||'')}</textarea>`:
+      `<p style="color:#6A6A64;font-size:13px;line-height:1.7;font-style:italic">${esc(s.mood)||'—'}</p>`}
+    </div>
+    <div class="card mb-16">
+      <h3 class="serif-font mb-16" style="font-size:16px;font-weight:400">Wedding Party Florals</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">
+        ${partyFlorals.map(([label,key])=>`
+          <div>
+            <label class="lbl">${label}</label>
+            ${isAdmin?`<input value="${esc((s.partyFlorals||{})[key]||'')}" data-input="party-floral" data-key="${key}"/>`:
+            `<div style="font-size:12px;padding-top:3px;min-height:20px">${esc((s.partyFlorals||{})[key])||'<span style="color:#ccc">—</span>'}</div>`}
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;overflow-x:auto;border-bottom:1px solid #E5E5E0;background:#FAFAFA">${zoneTabsHtml}</div>
+      <div style="padding:20px">
+        <div class="text-xs text-gray mb-16" style="text-transform:uppercase;letter-spacing:.08em">${cz.icon} ${cz.label}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">${zoneFieldsHtml}</div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0F0EC">
+          <label class="lbl">Notes</label>
+          ${isAdmin?`<textarea placeholder="Additional notes..." data-input="zone-notes" data-zone="${az}" style="min-height:50px">${esc(gn(az))}</textarea>`:
+          `<div style="font-size:12px;line-height:1.6;font-style:${gn(az)?'normal':'italic'};color:${gn(az)?'#1C1C1C':'#ccc'}">${esc(gn(az))||'—'}</div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── MOODBOARD ─────────────────────────────────────────────────────────────────
+function renderMoodboard(cl,isAdmin){
+  const board=cl.moodboard||[];
+  return `
+    <div class="section-head">
+      <div><h2 class="serif-font section-title">Mood Board</h2><p class="section-sub">Inspiration images.</p></div>
+      ${isAdmin?`<button class="btn btn-dark btn-sm" data-action="add-image">+ Add Image</button>`:''}
+    </div>
+    ${board.length===0?`<div class="card" style="text-align:center;padding:48px;border:2px dashed #DEDED8;background:#F8F8F6"><div style="font-size:40px;margin-bottom:10px">🌸</div><div class="serif-font" style="font-size:18px;color:#aaa;font-weight:300">No images yet</div></div>`:''}
+    <div class="masonry">${board.map(img=>`
+      <div class="masonry-item" data-action="preview-image" data-id="${esc(img.id)}">
+        <img src="${esc(img.src)}" alt="${esc(img.caption||'')}" style="width:100%;display:block;object-fit:cover" onerror="this.style.display='none'"/>
+        ${img.caption?`<div style="padding:6px 10px;font-size:12px;color:#555;background:#fff">${esc(img.caption)}</div>`:''}
+        ${isAdmin?`<button class="btn-nude" data-action="del-image" data-id="${esc(img.id)}" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center" onclick="event.stopPropagation()">✕</button>`:''}
+      </div>`).join('')}
+    </div>`;
+}
+
+// ── BUDGET ────────────────────────────────────────────────────────────────────
+function renderBudget(cl,isAdmin){
+  const bl=cl.budgetLines||{};
+  const getL=(sid,key)=>(bl[sid]||{})[key]||{vendor:'',totalCost:'',paymentDetails:'',others:'',paymentsMade:'',pendingPayments:'',customLabel:''};
+  const sT=sid=>Object.values(bl[sid]||{}).reduce((s,l)=>s+(parseFloat(l.totalCost)||0),0);
+  const gC=BUDGET_SECTIONS.reduce((s,sec)=>s+sT(sec.id),0);
+  const gP=BUDGET_SECTIONS.reduce((s,sec)=>s+Object.values(bl[sec.id]||{}).reduce((ss,l)=>ss+(parseFloat(l.paymentsMade)||0),0),0);
+  const gPn=BUDGET_SECTIONS.reduce((s,sec)=>s+Object.values(bl[sec.id]||{}).reduce((ss,l)=>ss+(parseFloat(l.pendingPayments)||0),0),0);
+  const pending=Math.max(0,(cl.budget||0)-(cl.budgetPaid||0));
+  const pct=cl.budget?Math.round((cl.budgetPaid/cl.budget)*100):0;
+
+  return `
+    <div class="section-head">
+      <div><h2 class="serif-font section-title">Budget</h2><p class="section-sub">Visible to team only.</p></div>
+      ${isAdmin?`<button class="btn btn-outline btn-sm" data-action="edit-totals">Edit Totals</button>`:''}
+    </div>
+    <div class="stats-row" style="margin-bottom:16px">
+      ${[['Total Budget',cl.budget,'#1C1C1C'],['Total Paid',cl.budgetPaid,'#16a34a'],['Pending',pending,'#dc2626']].map(([l,v,col])=>`
+        <div class="stat-card" style="text-align:center">
+          <div class="serif-font stat-val" style="color:${col}">${fmt(v)}</div>
+          <div class="stat-label">${l}</div>
+        </div>`).join('')}
+    </div>
+    <div class="card mb-12">
+      <div class="flex flex-between mb-8"><span class="text-sm bold">Payment Progress</span><span class="text-sm bold" style="color:${pct>=100?'#16a34a':'#d97706'}">${pct}%</span></div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${pct>=100?'#16a34a':'#1C1C1C'}"></div></div>
+    </div>
+    <div class="card mb-16" style="background:#fffbeb;border-color:#fde68a">
+      <p style="font-size:11px;color:#92400e;line-height:1.5">Prices are based on quotes received. Total costs will fluctuate depending on final choices and guest count.</p>
+    </div>
+    ${BUDGET_SECTIONS.map(section=>{const st=sT(section.id);return `
+      <div class="card mb-14" style="padding:0;overflow:hidden">
+        <div class="card-dark" style="border-radius:0;display:flex;justify-content:space-between;align-items:center">
+          <span class="serif-font" style="font-size:16px;font-weight:400;color:#fff">${section.label}</span>
+          ${st>0?`<span class="text-xs" style="color:#ccc">${fmt(st)}</span>`:''}
+        </div>
+        <div class="overflow-x"><table class="budget-table">
+          <thead><tr>${['Service','Vendor','Total Cost','Payment Details','Others','Payments Made','Pending'].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${section.lines.map((line,idx)=>{const key=line.key+idx;const d=getL(section.id,key);return `<tr>
+              <td>${isAdmin?`<input value="${esc(d.customLabel||line.label)}" placeholder="Service..." style="width:120px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="customLabel"/>`:
+              `<span style="font-weight:500">${esc(d.customLabel||line.label||'—')}</span>`}</td>
+              <td>${isAdmin?`<input value="${esc(d.vendor||'')}" style="width:110px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="vendor"/>`:`<span class="text-xs">${esc(d.vendor)||"—"}</span>`}</td>
+              <td>${isAdmin?`<input value="${esc(d.totalCost||'')}" style="width:76px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="totalCost" placeholder="0.00"/>`:`<span class="text-xs">${fmt(parseFloat(d.totalCost)||0)}</span>`}</td>
+              <td>${isAdmin?`<input value="${esc(d.paymentDetails||'')}" style="width:110px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="paymentDetails"/>`:`<span class="text-xs">${esc(d.paymentDetails)||"—"}</span>`}</td>
+              <td>${isAdmin?`<input value="${esc(d.others||'')}" style="width:80px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="others"/>`:`<span class="text-xs">${esc(d.others)||"—"}</span>`}</td>
+              <td>${isAdmin?`<input value="${esc(d.paymentsMade||'')}" style="width:76px" data-input="budget-field" data-sid="${section.id}" data-key="${key}" data-f="paymentsMade" placeholder="0.00"/>`:`<span class="text-xs">${fmt(parseFloat(d.paymentsMade)||0)}</span>`}</td>
+              <td style="background:${parseFloat(d.pendingPayments||0)>0?'#fef2f2':'transparent'}"><span style="font-weight:700;color:${parseFloat(d.pendingPayments||0)>0?'#dc2626':'#aaa'};font-size:12px">${parseFloat(d.pendingPayments||0)>0?fmt(parseFloat(d.pendingPayments)):"—"}</span></td>
+            </tr>`;}).join('')}
+            <tr style="background:#F8F8F6;border-top:2px solid #E5E5E0"><td colspan="3"><strong>TOTAL ${section.label.toUpperCase()}</strong></td><td colspan="4" style="text-align:right"><strong>${fmt(st)}</strong></td></tr>
+          </tbody>
+        </table></div>
+      </div>`}).join('')}
+    <div style="background:#1C1C1C;border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+      ${[['TOTAL COST',gC,'#fff'],['TOTAL PAID',gP,'#4ADE80'],['TOTAL PENDING',gPn,'#FCA5A5']].map(([l,v,col])=>`
+        <div><div class="text-xs" style="color:#888;letter-spacing:.1em;margin-bottom:4px">${l}</div><div class="serif-font" style="font-size:clamp(16px,3vw,22px);color:${col}">${fmt(v)}</div></div>`).join('')}
+    </div>`;
+}
+
+// ── FAMILY ────────────────────────────────────────────────────────────────────
+function renderFamily(cl,isAdmin){
+  return `
+    <div class="section-head"><h2 class="serif-font section-title">Family</h2></div>
+    <div class="grid-2">
+      ${['bride','groom'].map(side=>`
+        <div>
+          <div class="flex flex-between mb-12">
+            <h3 class="serif-font" style="font-size:18px;font-weight:300">${esc(side==='bride'?cl.bride:cl.groom)}</h3>
+            ${isAdmin?`<button class="btn btn-dark btn-sm" data-action="add-family" data-side="${side}">+ Add</button>`:''}
+          </div>
+          ${(cl.family[side]||[]).map(f=>`
+            <div class="card" style="margin-bottom:8px;display:flex;justify-content:space-between">
+              <div>
+                <div style="font-weight:500;font-size:13px">${esc(f.name)}</div>
+                <div class="text-xs text-nude mt-10" style="margin-top:2px">${esc(f.relation)}</div>
+                ${f.notes?`<div class="text-xs text-gray italic" style="margin-top:3px">${esc(f.notes)}</div>`:''}
+              </div>
+              ${isAdmin?`<button class="btn-nude" data-action="del-family" data-side="${side}" data-id="${esc(f.id)}">✕</button>`:''}
+            </div>`).join('')}
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── INSPECTION ────────────────────────────────────────────────────────────────
+function renderInspection(cl,isAdmin){
+  const ins=cl.inspection||{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]};
+  return `
+    <div class="section-head"><h2 class="serif-font section-title">Inspection Visit</h2><p class="section-sub">Pre-wedding site visits and tastings.</p></div>
+    <div class="card mb-16">
+      <h3 class="serif-font mb-16" style="font-size:16px;font-weight:400">Overview</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        ${[['Inspection Dates','inspectionDates'],['Wedding Day','weddingDay'],['Who is Attending','whoAttending'],['Hotel','hotel']].map(([label,key])=>`
+          <div>
+            <label class="lbl">${label}</label>
+            ${isAdmin?`<input value="${esc(ins[key]||'')}" data-input="inspection-field" data-key="${key}"/>`:
+            `<div style="font-size:13px;padding-top:3px;font-style:italic">${esc(ins[key])||'—'}</div>`}
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex flex-between mb-16">
+        <h3 class="serif-font" style="font-size:16px;font-weight:400">Schedule</h3>
+        ${isAdmin?`<button class="btn btn-dark btn-sm" data-action="add-visit">+ Add Stop</button>`:''}
+      </div>
+      ${(ins.visits||[]).length===0?`<p class="text-xs text-gray" style="text-align:center;padding:16px 0">No visits scheduled yet.</p>`:''}
+      ${(ins.visits||[]).map(v=>`
+        <div class="card" style="margin-bottom:10px;background:#F8F8F6;position:relative">
+          ${isAdmin?`
+            <div class="grid-2 gap-10">
+              <div><label class="lbl">Type</label><select data-input="visit-type" data-id="${esc(v.id)}"><option ${v.type==='Venue Visit'?'selected':''}>Venue Visit</option><option ${v.type==='Menu Tasting'?'selected':''}>Menu Tasting</option><option ${v.type==='Hotel Visit'?'selected':''}>Hotel Visit</option><option ${v.type==='MUAH Trial'?'selected':''}>MUAH Trial</option><option ${v.type==='Florist Visit'?'selected':''}>Florist Visit</option><option ${v.type==='Other'?'selected':''}>Other</option></select></div>
+              <div><label class="lbl">Date & Time</label><div class="flex flex-gap"><input placeholder="3 Jan" value="${esc(v.date)}" data-input="visit-date" data-id="${esc(v.id)}"/><input placeholder="09:00" value="${esc(v.time)}" style="width:72px;flex-shrink:0" data-input="visit-time" data-id="${esc(v.id)}"/></div></div>
+              <div><label class="lbl">Venue / Location</label><input value="${esc(v.venue||'')}" data-input="visit-venue" data-id="${esc(v.id)}"/></div>
+              <div><label class="lbl">Maps Link</label><input placeholder="https://maps.google.com/..." value="${esc(v.address||'')}" data-input="visit-address" data-id="${esc(v.id)}"/></div>
+              <div style="grid-column:1/-1"><label class="lbl">Notes</label><input value="${esc(v.notes||'')}" data-input="visit-notes" data-id="${esc(v.id)}"/></div>
+            </div>
+            <button class="btn-nude" data-action="del-visit" data-id="${esc(v.id)}" style="position:absolute;top:10px;right:10px;color:#ddd;font-size:15px">✕</button>`:
+          `<div>
+            <div class="flex flex-gap mb-8"><span class="serif-font bold" style="font-size:15px">${esc(v.type)}</span><span class="text-sm text-nude bold">${esc(v.date)}${v.time?' · '+esc(v.time):''}</span></div>
+            ${v.venue?`<div class="text-sm bold mb-8">${esc(v.venue)}</div>`:''}
+            ${v.address?`<a href="${esc(v.address.startsWith('http')?v.address:'#')}" target="_blank" style="font-size:11px;color:#B5977A;text-decoration:none">📍 View on Maps</a>`:''}
+            ${v.notes?`<div class="text-xs text-gray italic" style="margin-top:5px">${esc(v.notes)}</div>`:''}
+          </div>`}
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── TEAM VIEW ─────────────────────────────────────────────────────────────────
+function renderTeam(){
+  const u=STATE.session.user;
+  return `
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  <header class="app-header">
+    <div class="header-left">
+      <button class="btn-nude" data-action="go-back" style="color:#1C1C1C;font-size:13px">&#8592; Back</button>
+      <div class="divider"></div>
+      <span class="script-font" style="font-size:22px;color:#1C1C1C">Just Married</span>
+    </div>
+    <div class="header-right"><span class="text-sm text-gray">Team & Access</span></div>
+  </header>
+  <div class="content-inner" style="max-width:900px">
+    <div class="card mb-16">
+      <div class="flex flex-between mb-16 flex-wrap gap-10">
+        <div><h2 class="serif-font" style="font-size:22px;font-weight:300">Team Members</h2><p class="text-xs text-gray">Owners see all weddings. Planners see assigned only.</p></div>
+        <button class="btn btn-dark btn-sm" data-action="add-member">+ Add Member</button>
+      </div>
+      ${STATE.admins.map(a=>{const cnt=STATE.clients.filter(c=>c.leadId===a.id||(c.collaboratorIds||[]).includes(a.id)).length;return `
+        <div class="flex flex-gap flex-wrap" style="background:#F8F8F6;border-radius:8px;padding:12px 16px;border:1px solid #E5E5E0;margin-bottom:8px">
+          <div class="avatar" style="width:36px;height:36px;background:${avatarBg(a.name)};font-size:13px">${avatarLetters(a.name)}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${esc(a.name)}</div>
+            <div class="text-xs text-gray">@${esc(a.username)} · pw: ${esc(a.password)} · ${cnt} wedding${cnt!==1?'s':''}</div>
+          </div>
+          <span class="text-xs bold" style="padding:3px 10px;border-radius:10px;background:${a.role==='owner'?'#fdf4ff':'#f0fdf4'};color:${a.role==='owner'?'#9333ea':'#16a34a'};border:1px solid ${a.role==='owner'?'#e9d5ff':'#86efac'}">${a.role==='owner'?'Owner':'Planner'}</span>
+          ${STATE.admins.length>1&&a.id!==u.id?`<button class="btn-nude" data-action="del-member" data-id="${esc(a.id)}" style="color:#fca5a5;font-size:16px">✕</button>`:''}
+        </div>`}).join('')}
+    </div>
+    <div class="card">
+      <h2 class="serif-font mb-16" style="font-size:22px;font-weight:300">Assignments</h2>
+      ${STATE.clients.map(c=>{const lead=STATE.admins.find(a=>a.id===c.leadId);return `
+        <div class="flex flex-between flex-wrap gap-10" style="background:#F8F8F6;border-radius:8px;border:1px solid #E5E5E0;padding:12px 16px;margin-bottom:8px">
+          <div>
+            <div class="serif-font" style="font-size:16px">${esc(c.bride)} & ${esc(c.groom)}</div>
+            <div class="text-xs text-gray">${esc(c.venue)}${c.date?' · '+fmtDate(c.date):''}</div>
+            <div class="text-xs text-gray">Login: ${esc(c.coupleUser)} / ${esc(c.couplePass)}</div>
+            ${lead?`<div class="flex flex-gap" style="margin-top:4px"><div class="avatar" style="width:16px;height:16px;background:${avatarBg(lead.name)};font-size:7px">${avatarLetters(lead.name)}</div><span class="text-xs" style="color:#555">${esc(lead.name)} (Lead)</span></div>`:''}
+          </div>
+          <button class="btn btn-outline btn-sm" data-action="manage-access" data-id="${esc(c.id)}">Manage</button>
+        </div>`}).join('')}
+    </div>
+  </div>
+</div>`;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function closeModal(){STATE.modal=null;}
+
+function renderModal(){
+  const m=STATE.modal;
+  if(!m)return '';
+  let body='';
+  const wide=m.wide?'wide':'';
+
+  if(m.type==='roadmap-item'){
+    const r=m.item||{};
+    body=`
+      <div class="grid-2 mb-12">
+        <div class="field"><label>Category</label><select id="m-cat"><option>Venue</option>${RCATS.filter(c=>c!=='Venue').map(c=>`<option${c===r.category?' selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Status</label><select id="m-status">${Object.entries(STATUS).map(([k,s])=>`<option value="${k}"${k===r.status?' selected':''}>${s.label}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Item</label><input id="m-item" value="${esc(r.item||'')}"/></div>
+      <div class="field"><label>Notes</label><textarea id="m-notes" style="min-height:60px">${esc(r.notes||'')}</textarea></div>
+      <div class="field"><label>Due Date</label><input type="date" id="m-due" value="${esc(r.dueDate||'')}"/></div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;font-size:13px;color:#6A6A64"><input type="checkbox" id="m-admin"${r.adminOnly?' checked':''}/> Admin only</label>
+      <div class="flex flex-gap" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-roadmap-item">Save</button>
+      </div>`;
+  }
+  else if(m.type==='vendor'){
+    const v=m.vendor||{};
+    body=`
+      <div class="grid-2 mb-12">
+        <div class="field"><label>Category</label><select id="m-cat">${VCATS.map(c=>`<option${c===v.cat?' selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Name</label><input id="m-name" value="${esc(v.name||'')}"/></div>
+      </div>
+      <div class="field"><label>Social / Website</label>
+        <div class="flex flex-gap">
+          <select id="m-stype" style="width:auto;flex-shrink:0">${['instagram','facebook','website','tiktok'].map(t=>`<option${t===v.sType?' selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}</select>
+          <input id="m-social" placeholder="@handle or URL" value="${esc(v.social||'')}"/>
+        </div>
+      </div>
+      <div class="grid-2 mb-12">
+        <div class="field"><label>Phone</label><input id="m-phone" value="${esc(v.phone||'')}"/></div>
+        <div class="field"><label>Contact</label><input id="m-contact" value="${esc(v.contact||'')}"/></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="m-notes" style="min-height:50px">${esc(v.notes||'')}</textarea></div>
+      <div class="flex flex-gap mt-12 mb-16">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#6A6A64"><input type="checkbox" id="m-conf"${v.confirmed?' checked':''}/> Confirmed</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#6A6A64"><input type="checkbox" id="m-admin"${v.adminOnly?' checked':''}/> Admin only</label>
+      </div>
+      <div class="flex flex-gap" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-vendor">Save</button>
+      </div>`;
+  }
+  else if(m.type==='library'){
+    body=`<p class="text-xs text-gray mb-12">Add JMB regular vendors — details pre-filled.</p>
+      <div style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+        ${JMB_LIBRARY.map((v,i)=>{const cl=getClient();const added=(cl.vendors||[]).some(x=>x.name===v.name);return `
+          <div class="flex flex-between flex-gap" style="background:#F8F8F6;border-radius:8px;border:1px solid #E5E5E0;padding:10px 14px">
+            <div><div style="font-weight:600;font-size:13px">${esc(v.name)}</div><div class="text-xs text-gray">${esc(v.cat)}${v.phone?' · '+esc(v.phone):''}</div></div>
+            ${added?`<span class="text-xs bold" style="color:#16a34a;background:#f0fdf4;padding:2px 8px;border-radius:7px">Added</span>`:
+            `<button class="btn btn-dark btn-sm" data-action="add-from-library" data-idx="${i}">Add</button>`}
+          </div>`}).join('')}
+      </div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end"><button class="btn btn-outline" data-action="modal-cancel">Done</button></div>`;
+  }
+  else if(m.type==='docs'){
+    const cl=getClient();
+    const v=(cl.vendors||[]).find(x=>x.id===m.vid)||{name:'',docs:[]};
+    const docs=v.docs||[];
+    body=`<p class="text-xs text-gray mb-12">Budgets, contracts and files for this vendor.</p>
+      ${docs.length===0?`<p class="text-xs text-gray" style="text-align:center;padding:16px;background:#F8F8F6;border-radius:8px;margin-bottom:12px">No documents yet.</p>`:''}
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        ${docs.map(d=>`
+          <div style="background:${d.chosen?'#f0fdf4':'#F8F8F6'};border-radius:8px;border:1px solid ${d.chosen?'#86efac':'#E5E5E0'};padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+            <div style="flex:1">
+              <div class="flex flex-gap mb-8"><span style="font-weight:600;font-size:13px">${esc(d.title)}</span>${d.chosen?`<span class="text-xs bold" style="color:#16a34a;background:#dcfce7;padding:1px 8px;border-radius:7px">Chosen</span>`:''}</div>
+              ${d.description?`<div class="text-xs" style="color:#6A6A64;margin-bottom:3px">${esc(d.description)}</div>`:''}
+              ${d.price?`<div style="font-size:13px;color:#B5977A;font-weight:600">€${esc(d.price)}</div>`:''}
+              ${d.fileData?`<a href="${d.fileData}" download="${esc(d.fileName||'file')}" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;color:#7c3aed;background:#f5f3ff;padding:2px 8px;border-radius:10px;border:1px solid #e9d5ff;text-decoration:none">📄 ${esc(d.fileName||'Download')}</a>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+              <button class="btn btn-outline btn-sm" data-action="toggle-chosen" data-vid="${esc(m.vid)}" data-did="${esc(d.id)}" style="border-color:${d.chosen?'#86efac':'#E5E5E0'};color:${d.chosen?'#16a34a':'#8A8A82'}">${d.chosen?'Unchose':'Choose'}</button>
+              <button class="btn-nude text-xs" data-action="del-doc" data-vid="${esc(m.vid)}" data-did="${esc(d.id)}" style="color:#fca5a5">Remove</button>
+            </div>
+          </div>`).join('')}
+      </div>
+      ${m.isAdmin?`
+        ${STATE._addingDoc?`
+          <div style="background:#F8F8F6;border-radius:8px;border:1px solid #E5E5E0;padding:16px">
+            <div class="field"><label>Title</label><input id="doc-title" placeholder="Budget Pack A · Contract..."/></div>
+            <div class="field"><label>Description</label><textarea id="doc-desc" style="min-height:44px"></textarea></div>
+            <div class="field"><label>Price (€)</label><input id="doc-price"/></div>
+            <div class="field"><label>File</label><button class="btn btn-outline w-full" onclick="document.getElementById('doc-file').click()">${STATE._docFile?'📄 '+esc(STATE._docFile):'📎 Choose file'}</button><input type="file" id="doc-file" accept="application/pdf,image/*" style="display:none" data-change="doc-file"/></div>
+            <div class="flex flex-gap mt-12" style="justify-content:flex-end">
+              <button class="btn btn-outline" data-action="cancel-doc">Cancel</button>
+              <button class="btn btn-dark" data-action="save-doc" data-vid="${esc(m.vid)}">Add</button>
+            </div>
+          </div>`:
+          `<button class="btn btn-dark w-full" style="padding:10px" data-action="start-add-doc">+ Add Document / Quote</button>`}
+      `:''}`;
+  }
+  else if(m.type==='new-client'){
+    body=`
+      <div class="grid-2 mb-12">
+        <div class="field"><label>Bride's Name</label><input id="m-bride"/></div>
+        <div class="field"><label>Groom / Partner</label><input id="m-groom"/></div>
+      </div>
+      <div class="field"><label>Wedding Date</label><input type="date" id="m-date"/></div>
+      <div class="field"><label>Venue</label><input id="m-venue"/></div>
+      <div class="field"><label>Location</label><input id="m-location" placeholder="City, Country"/></div>
+      <div class="grid-2 mb-12">
+        <div class="field"><label>Guest Count</label><input type="number" id="m-guests"/></div>
+        <div class="field"><label>Total Budget (€)</label><input type="number" id="m-budget"/></div>
+      </div>
+      <div class="field"><label>Lead Planner</label><select id="m-lead"><option value="">— Assign later —</option>${STATE.admins.map(a=>`<option value="${esc(a.id)}">${esc(a.name)} (${a.role})</option>`).join('')}</select></div>
+      <div class="card mt-14" style="background:#F8F8F6">
+        <label class="lbl">Couple Login</label>
+        <div class="grid-2 mt-10">
+          <div class="field"><label>Username</label><input id="m-cuser" placeholder="e.g. caitlingus"/></div>
+          <div class="field"><label>Password</label><input id="m-cpass" placeholder="auto-generated if blank"/></div>
+        </div>
+      </div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-new-client">Create Client</button>
+      </div>`;
+  }
+  else if(m.type==='add-member'){
+    body=`
+      <div class="field"><label>Full Name</label><input id="m-name"/></div>
+      <div class="field"><label>Username</label><input id="m-user"/></div>
+      <div class="field"><label>Password</label><input id="m-pass"/></div>
+      <div class="field"><label>Role</label>
+        <div class="flex flex-gap mt-10">
+          ${['planner','owner'].map(r=>`<button class="btn ${STATE._memberRole===r?'btn-dark':'btn-outline'}" style="flex:1" data-action="set-role" data-role="${r}"><div style="font-weight:700">${r==='owner'?'Owner':'Planner'}</div><div style="font-size:10px;opacity:.7;margin-top:2px">${r==='owner'?'All weddings':'Assigned only'}</div></button>`).join('')}
+        </div>
+      </div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-member">Add</button>
+      </div>`;
+  }
+  else if(m.type==='access'){
+    const c=STATE.clients.find(x=>x.id===m.cid)||{};
+    const mAcc=STATE._modalAccess||c;
+    body=`
+      <div class="card mb-12" style="background:#F8F8F6">
+        <label class="lbl mb-12">Lead Planner</label>
+        <div class="flex flex-gap flex-wrap mb-12">
+          <button class="btn ${!mAcc.leadId?'btn-dark':'btn-outline'} btn-sm" data-action="acc-lead" data-id="">None</button>
+          ${STATE.admins.map(a=>`<button class="btn ${mAcc.leadId===a.id?'btn-dark':'btn-outline'} btn-sm flex flex-gap" style="align-items:center" data-action="acc-lead" data-id="${esc(a.id)}"><span class="avatar" style="width:16px;height:16px;background:${avatarBg(a.name)};font-size:7px">${avatarLetters(a.name)}</span>${esc(a.name)}</button>`).join('')}
+        </div>
+        <label class="lbl mb-10">Couple Login</label>
+        <div class="grid-2 mb-12">
+          <div class="field"><label>Username</label><input id="acc-user" value="${esc(mAcc.coupleUser||'')}"/></div>
+          <div class="field"><label>Password</label><input id="acc-pass" value="${esc(mAcc.couplePass||'')}"/></div>
+        </div>
+        <label class="lbl mb-10">Visible Tabs</label>
+        <div class="flex flex-gap flex-wrap">
+          ${COUPLE_TABS.map(id=>{const t=ADMIN_TABS.find(x=>x.id===id);const active=(mAcc.visibleTabs||[]).includes(id);return `<button class="btn ${active?'btn-dark':'btn-outline'} btn-sm" data-action="acc-tab" data-tab="${id}">${t?t.label:id}</button>`;}).join('')}
+        </div>
+      </div>
+      <div class="flex flex-gap" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-access" data-cid="${esc(m.cid)}">Save</button>
+      </div>`;
+  }
+  else if(m.type==='edit-totals'){
+    const cl=getClient();
+    body=`
+      <div class="field"><label>Total Budget (€)</label><input type="number" id="m-budget" value="${cl.budget||0}"/></div>
+      <div class="field"><label>Total Paid (€)</label><input type="number" id="m-paid" value="${cl.budgetPaid||0}"/></div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-totals">Save</button>
+      </div>`;
+  }
+  else if(m.type==='add-family'){
+    body=`
+      <div class="field"><label>Name</label><input id="m-name"/></div>
+      <div class="field"><label>Relation</label><input id="m-rel" placeholder="e.g. Mum, Brother..."/></div>
+      <div class="field"><label>Notes / Role</label><textarea id="m-notes" style="min-height:50px"></textarea></div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-family" data-side="${esc(m.side)}">Add</button>
+      </div>`;
+  }
+  else if(m.type==='add-day'){
+    body=`
+      <div class="field"><label>Day Label</label><input id="m-label" placeholder="e.g. Saturday 16th August — Wedding Day"/></div>
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-day">Add Day</button>
+      </div>`;
+  }
+  else if(m.type==='add-image'){
+    body=`
+      <div class="field"><label>Caption (optional)</label><input id="m-caption"/></div>
+      <div class="field"><label>Upload Image</label>
+        <button class="btn btn-outline w-full" style="border-style:dashed" onclick="document.getElementById('img-file').click()">${STATE._imgFile?'✓ Image selected':'📷 Choose image'}</button>
+        <input type="file" id="img-file" accept="image/*" style="display:none" data-change="img-file"/>
+      </div>
+      <div style="text-align:center;color:#ccc;font-size:11px;margin:10px 0">— or paste a URL —</div>
+      <div class="field"><label>Image URL</label><input id="m-url" placeholder="https://..."/></div>
+      ${STATE._imgData?`<img src="${STATE._imgData}" style="width:100%;border-radius:7px;margin-top:10px;max-height:160px;object-fit:cover;border:1px solid #E5E5E0"/>`:
+       STATE._imgUrl?`<img src="${esc(STATE._imgUrl)}" style="width:100%;border-radius:7px;margin-top:10px;max-height:160px;object-fit:cover;border:1px solid #E5E5E0" onerror="this.style.display='none'"/>`:'' }
+      <div class="flex flex-gap mt-16" style="justify-content:flex-end">
+        <button class="btn btn-outline" data-action="modal-cancel">Cancel</button>
+        <button class="btn btn-dark" data-action="save-image">Add</button>
+      </div>`;
+  }
+  else if(m.type==='preview-image'){
+    return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px" data-action="close-preview">
+      <div style="max-width:900px;position:relative" onclick="event.stopPropagation()">
+        <img src="${esc(m.src)}" alt="" style="max-width:100%;max-height:80vh;border-radius:8px;object-fit:contain;display:block"/>
+        ${m.caption?`<div style="text-align:center;color:#ddd;font-size:13px;margin-top:8px;font-style:italic">${esc(m.caption)}</div>`:''}
+        <button class="btn-nude" data-action="close-preview" style="position:absolute;top:-12px;right:-12px;background:rgba(255,255,255,.15);border-radius:50%;width:30px;height:30px;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="modal-overlay" onclick="if(event.target===this){document.dispatchEvent(new CustomEvent('close-modal'))}">
+    <div class="modal-box ${wide}">
+      <div class="modal-head">
+        <span class="modal-title serif-font">${esc(m.title||'')}</span>
+        <button class="modal-close" data-action="modal-cancel">✕</button>
+      </div>
+      <div class="modal-body">${body}</div>
+    </div>
+  </div>`;
+}
+
+// ── ACTION HANDLERS ───────────────────────────────────────────────────────────
+function handleAction(action,data,e,el){
+  const cl=getClient();
+
+  // ── Auth ──
+  if(action==='login-tab'){
+    STATE._loginTab=data.tab;
+    // Update tab buttons without clearing inputs
+    document.querySelectorAll('.login-tab').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.tab===data.tab);
+    });
+    const ph=document.getElementById('lu');
+    if(ph)ph.placeholder=data.tab==='team'?'anna · judit · admin':'couple username';
+    STATE._loginErr='';
+    const errDiv=document.querySelector('.login-error');
+    if(errDiv)errDiv.remove();
+    return;
+  }
+  if(action==='toggle-remember'){
+    STATE._loginRemember=!STATE._loginRemember;
+    const tog=document.getElementById('rem-toggle');
+    const knob=tog&&tog.querySelector('.toggle-knob');
+    if(tog){tog.style.background=STATE._loginRemember?'#1C1C1C':'#E5E5E0';}
+    if(knob){knob.style.left=STATE._loginRemember?'20px':'2px';}
+    return;
+  }
+  if(action==='login'){
+    const tab=STATE._loginTab||'couple';
+    const u=document.getElementById('lu')&&document.getElementById('lu').value.trim().toLowerCase()||'';
+    const p=document.getElementById('lp')&&document.getElementById('lp').value||'';
+    if(tab==='team'){
+      const admin=STATE.admins.find(a=>a.username===u&&a.password===p);
+      if(!admin){STATE._loginErr='Invalid credentials.';render();return;}
+      STATE.session={role:admin.role,user:admin};
+      STATE.view='dash';STATE._loginErr='';
+      if(STATE._loginRemember)lsSet('session',{role:admin.role,uid:admin.id,pw:admin.password});
+    } else {
+      const couple=STATE.clients.find(c=>c.coupleUser===u&&c.couplePass===p);
+      if(!couple){STATE._loginErr='Incorrect credentials.';render();return;}
+      STATE.session={role:'couple',client:couple};
+      STATE.view='client';STATE.activeClientId=couple.id;STATE.activeTab='roadmap';
+      if(STATE._loginRemember)lsSet('session',{role:'couple',cid:couple.id,cu:couple.coupleUser});
+    }
+    render();return;
+  }
+  if(action==='logout'){STATE.session=null;STATE.view='login';STATE._loginErr='';lsSet('session',null);render();return;}
+
+  // ── Navigation ──
+  if(action==='go-back'){STATE.view=STATE.session.role==='couple'?'login':'dash';render();return;}
+  if(action==='go-team'){STATE.view='team';render();return;}
+  if(action==='open-client'){STATE.view='client';STATE.activeClientId=data.id;STATE.activeTab='roadmap';render();return;}
+  if(action==='set-tab'){STATE.activeTab=data.tab;render();return;}
+  if(action==='set-zone'){STATE.activeZone=data.zone;render();return;}
+
+  // ── Modal ──
+  if(action==='modal-cancel'||action==='overlay-close'){closeModal();STATE._addingDoc=false;STATE._docFile='';STATE._docFileData='';STATE._imgFile='';STATE._imgData='';STATE._imgUrl='';render();return;}
+  if(action==='close-preview'){closeModal();render();return;}
+
+  // ── Dashboard ──
+  if(action==='new-client'){STATE.modal={type:'new-client',title:'New Client'};render();return;}
+  if(action==='save-new-client'){
+    const bride=document.getElementById('m-bride').value.trim();
+    const groom=document.getElementById('m-groom').value.trim();
+    const date=document.getElementById('m-date').value;
+    if(!bride||!groom||!date)return;
+    const slug=(bride+groom).toLowerCase().replace(/\s/g,'');
+    const cu=document.getElementById('m-cuser').value.trim().toLowerCase()||slug;
+    const cp=document.getElementById('m-cpass').value||bride.slice(0,3).toLowerCase()+new Date(date).getFullYear();
+    const nc={
+      id:uid(),bride,groom,date,
+      venue:document.getElementById('m-venue').value,
+      location:document.getElementById('m-location').value,
+      guests:{adults:parseInt(document.getElementById('m-guests').value)||0},
+      budget:parseFloat(document.getElementById('m-budget').value)||0,budgetPaid:0,
+      leadId:document.getElementById('m-lead').value||null,collaboratorIds:[],
+      coupleUser:cu,couplePass:cp,
+      visibleTabs:['roadmap','vendors','design','moodboard','rundown'],hiddenRoadmapIds:[],
+      style:{palette:['#1C1C1C','#F5F0E8','#B5977A'],mood:'',linen:'',chairs:'',glassware:'',cutlery:'',centerpiece:'',notes:''},
+      designZones:{},moodboard:[],
+      roadmap:JMB_ROADMAP_TEMPLATE.map((r,i)=>({...r,id:'r'+Date.now()+i})),
+      vendors:[],
+      rundown:{days:RUNDOWN_TEMPLATE.map(t=>({id:uid(),label:t.label,items:t.items.map(item=>({...item,id:uid()}))}))},
+      setup:JSON.parse(JSON.stringify(SETUP_TEMPLATE)),
+      inspection:{inspectionDates:'',weddingDay:'',whoAttending:'',hotel:'',visits:[]},
+      family:{bride:[],groom:[]},instagramHandles:{},guestCounts:{},budgetLines:{},
+    };
+    STATE.clients=[...STATE.clients,nc];saveClients();closeModal();render();return;
+  }
+
+  // ── Roadmap ──
+  if(action==='add-roadmap-item'){STATE.modal={type:'roadmap-item',title:'Add Item',item:{status:'pending'}};render();return;}
+  if(action==='edit-roadmap-item'){const r=(cl.roadmap||[]).find(x=>x.id===data.id);STATE.modal={type:'roadmap-item',title:'Edit Item',item:r};render();return;}
+  if(action==='save-roadmap-item'){
+    const item={category:document.getElementById('m-cat').value,item:document.getElementById('m-item').value,status:document.getElementById('m-status').value,notes:document.getElementById('m-notes').value,dueDate:document.getElementById('m-due').value,adminOnly:document.getElementById('m-admin').checked};
+    const id=STATE.modal.item&&STATE.modal.item.id;
+    const upd=id?{...cl,roadmap:(cl.roadmap||[]).map(r=>r.id===id?{...r,...item}:r)}:{...cl,roadmap:[...(cl.roadmap||[]),{...item,id:uid()}]};
+    updateClient(upd);closeModal();render();return;
+  }
+  if(action==='del-roadmap-item'){updateClient({...cl,roadmap:(cl.roadmap||[]).filter(r=>r.id!==data.id)});render();return;}
+
+  // ── Vendors ──
+  if(action==='vendor-filter'){STATE._vendorFilter=data.cat;render();return;}
+  if(action==='add-vendor'){STATE.modal={type:'vendor',title:'Add Vendor',vendor:null};render();return;}
+  if(action==='edit-vendor'){const v=(cl.vendors||[]).find(x=>x.id===data.id);STATE.modal={type:'vendor',title:'Edit Vendor',vendor:v};render();return;}
+  if(action==='save-vendor'){
+    const v={cat:document.getElementById('m-cat').value,name:document.getElementById('m-name').value,sType:(document.getElementById('m-stype').value||'instagram').toLowerCase(),social:document.getElementById('m-social').value,phone:document.getElementById('m-phone').value,contact:document.getElementById('m-contact').value,notes:document.getElementById('m-notes').value,confirmed:document.getElementById('m-conf').checked,adminOnly:document.getElementById('m-admin').checked,docs:[]};
+    const id=STATE.modal.vendor&&STATE.modal.vendor.id;
+    const upd=id?{...cl,vendors:(cl.vendors||[]).map(x=>x.id===id?{...x,...v,docs:x.docs||[]}:x)}:{...cl,vendors:[...(cl.vendors||[]),{...v,id:uid()}]};
+    updateClient(upd);closeModal();render();return;
+  }
+  if(action==='del-vendor'){updateClient({...cl,vendors:(cl.vendors||[]).filter(v=>v.id!==data.id)});render();return;}
+  if(action==='open-library'){STATE.modal={type:'library',title:'JMB Vendor Library',wide:true};render();return;}
+  if(action==='add-from-library'){
+    const v=JMB_LIBRARY[parseInt(data.idx)];
+    updateClient({...cl,vendors:[...(cl.vendors||[]),{...v,id:uid(),confirmed:false,adminOnly:false,docs:[]}]});
+    // Update just the button without closing modal
+    const btn=document.querySelector('[data-action="add-from-library"][data-idx="'+data.idx+'"]');
+    if(btn)btn.outerHTML='<span class="text-xs bold" style="color:#16a34a;background:#f0fdf4;padding:2px 8px;border-radius:7px">Added</span>';
+    return;
+  }
+  if(action==='open-docs'){STATE.modal={type:'docs',title:'Documents & Quotes',vid:data.id,isAdmin:STATE.session.role!=='couple'};STATE._addingDoc=false;render();return;}
+  if(action==='start-add-doc'){
+    STATE._addingDoc=true;
+    // Replace the button with the form without full render
+    const btn=document.querySelector('[data-action="start-add-doc"]');
+    if(btn){
+      btn.outerHTML=`<div id="doc-form-area" style="background:#F8F8F6;border-radius:8px;border:1px solid #E5E5E0;padding:16px">
+        <div class="field"><label class="lbl">TITLE</label><input id="doc-title" placeholder="Budget Pack A · Contract..."/></div>
+        <div class="field"><label class="lbl">DESCRIPTION</label><textarea id="doc-desc" style="min-height:44px"></textarea></div>
+        <div class="field"><label class="lbl">PRICE (€)</label><input id="doc-price"/></div>
+        <div class="field"><label class="lbl">FILE</label><button class="btn btn-outline w-full" onclick="document.getElementById('doc-file-input').click()">📎 Choose file</button><input type="file" id="doc-file-input" accept="application/pdf,image/*" style="display:none" data-change="doc-file"/></div>
+        <div class="flex flex-gap mt-12" style="justify-content:flex-end">
+          <button class="btn btn-outline" data-action="cancel-doc">Cancel</button>
+          <button class="btn btn-dark" data-action="save-doc" data-vid="${STATE.modal&&STATE.modal.vid||''}">Add</button>
+        </div>
+      </div>`;
+    }
+    return;
+  }
+  if(action==='cancel-doc'){STATE._addingDoc=false;const fa=document.getElementById('doc-form-area');if(fa)fa.outerHTML=`<button class="btn btn-dark w-full" style="padding:10px" data-action="start-add-doc">+ Add Document / Quote</button>`;return;}
+  if(action==='save-doc'){
+    const t=document.getElementById('doc-title').value;if(!t)return;
+    const doc={id:uid(),title:t,description:document.getElementById('doc-desc').value,price:document.getElementById('doc-price').value,fileName:STATE._docFile||'',fileData:STATE._docFileData||'',chosen:false};
+    const upd={...cl,vendors:(cl.vendors||[]).map(v=>v.id===data.vid?{...v,docs:[...(v.docs||[]),doc]}:v)};
+    updateClient(upd);STATE._addingDoc=false;STATE._docFile='';STATE._docFileData='';
+    STATE.modal={...STATE.modal};render();return;
+  }
+  if(action==='toggle-chosen'){
+    const upd={...cl,vendors:(cl.vendors||[]).map(v=>v.id===data.vid?{...v,docs:(v.docs||[]).map(d=>({...d,chosen:d.id===data.did?!d.chosen:false}))}:v)};
+    updateClient(upd);
+    // Re-render modal content only
+    const mb=document.querySelector('.modal-body');
+    if(mb&&STATE.modal){const tmp=document.createElement('div');tmp.innerHTML=renderModal();const newMb=tmp.querySelector('.modal-body');if(newMb)mb.innerHTML=newMb.innerHTML;}
+    return;
+  }
+  if(action==='del-doc'){
+    const upd={...cl,vendors:(cl.vendors||[]).map(v=>v.id===data.vid?{...v,docs:(v.docs||[]).filter(d=>d.id!==data.did)}:v)};
+    updateClient(upd);render();return;
+  }
+
+  // ── Setup ──
+  if(action==='add-arrival'){
+    const upd={...cl,setup:{...cl.setup,vendorArrivals:[...(cl.setup.vendorArrivals||[]),{id:uid(),time:'',vendor:'',notes:''}]}};
+    updateClient(upd);render();return;
+  }
+  if(action==='del-arrival'){const upd={...cl,setup:{...cl.setup,vendorArrivals:(cl.setup.vendorArrivals||[]).filter(v=>v.id!==data.id)}};updateClient(upd);render();return;}
+  if(action==='add-area-item'){const upd={...cl,setup:{...cl.setup,areas:[...(cl.setup.areas||[]),{id:uid(),area:data.area,vendor:'',notes:''}]}};updateClient(upd);render();return;}
+  if(action==='del-area-item'){const upd={...cl,setup:{...cl.setup,areas:(cl.setup.areas||[]).filter(a=>a.id!==data.id)}};updateClient(upd);render();return;}
+
+  // ── Rundown ──
+  if(action==='toggle-day'){STATE.collapsed={...STATE.collapsed,[data.id]:!STATE.collapsed[data.id]};render();return;}
+  if(action==='add-day'){STATE.modal={type:'add-day',title:'Add Day'};render();return;}
+  if(action==='save-day'){const label=document.getElementById('m-label').value.trim();if(!label)return;const upd={...cl,rundown:{...cl.rundown,days:[...(cl.rundown.days||[]),{id:uid(),label,items:[]}]}};updateClient(upd);closeModal();render();return;}
+  if(action==='del-day'){const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).filter(d=>d.id!==data.id)}};updateClient(upd);render();return;}
+  if(action==='add-rundown-item'){const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).map(d=>d.id===data.dayid?{...d,items:[...(d.items||[]),{id:uid(),time:'',who:'',action:''}]}:d)}};updateClient(upd);render();return;}
+  if(action==='del-item'){const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).map(d=>d.id===data.dayid?{...d,items:(d.items||[]).filter(i=>i.id!==data.iid)}:d)}};updateClient(upd);render();return;}
+  if(action==='move-item'){
+    const dir=parseInt(data.dir);
+    const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).map(d=>{if(d.id!==data.dayid)return d;const ni=[...d.items];const idx=ni.findIndex(i=>i.id===data.iid);const sw=idx+dir;if(sw<0||sw>=ni.length)return d;const tmp=ni[idx];ni[idx]=ni[sw];ni[sw]=tmp;return {...d,items:ni};})}};
+    updateClient(upd);render();return;
+  }
+
+  // ── Design ──
+  if(action==='del-palette'){const s=cl.style||{};const upd={...cl,style:{...s,palette:(s.palette||[]).filter((_,i)=>i!==parseInt(data.idx))}};updateClient(upd);render();return;}
+  if(action==='add-palette'){const s=cl.style||{};const upd={...cl,style:{...s,palette:[...(s.palette||[]),STATE._newColor||'#B5977A']}};updateClient(upd);render();return;}
+
+  // ── Moodboard ──
+  if(action==='add-image'){STATE.modal={type:'add-image',title:'Add Image'};STATE._imgData='';STATE._imgUrl='';STATE._imgFile='';render();return;}
+  if(action==='save-image'){
+    const src=STATE._imgData||(document.getElementById('m-url')&&document.getElementById('m-url').value)||'';
+    if(!src)return;
+    const cap=document.getElementById('m-caption')&&document.getElementById('m-caption').value||'';
+    updateClient({...cl,moodboard:[...(cl.moodboard||[]),{id:uid(),src,caption:cap}]});
+    closeModal();STATE._imgData='';STATE._imgUrl='';STATE._imgFile='';render();return;
+  }
+  if(action==='del-image'){updateClient({...cl,moodboard:(cl.moodboard||[]).filter(x=>x.id!==data.id)});render();return;}
+  if(action==='preview-image'){const img=(cl.moodboard||[]).find(x=>x.id===data.id);if(img)STATE.modal={type:'preview-image',src:img.src,caption:img.caption};render();return;}
+
+  // ── Budget ──
+  if(action==='edit-totals'){STATE.modal={type:'edit-totals',title:'Edit Budget Totals'};render();return;}
+  if(action==='save-totals'){const upd={...cl,budget:parseFloat(document.getElementById('m-budget').value)||0,budgetPaid:parseFloat(document.getElementById('m-paid').value)||0};updateClient(upd);closeModal();render();return;}
+
+  // ── Family ──
+  if(action==='add-family'){STATE.modal={type:'add-family',title:'Add Family Member',side:data.side};render();return;}
+  if(action==='save-family'){const n=document.getElementById('m-name').value.trim();if(!n)return;const f={id:uid(),name:n,relation:document.getElementById('m-rel').value,notes:document.getElementById('m-notes').value};const upd={...cl,family:{...cl.family,[data.side]:[...(cl.family[data.side]||[]),f]}};updateClient(upd);closeModal();render();return;}
+  if(action==='del-family'){const upd={...cl,family:{...cl.family,[data.side]:(cl.family[data.side]||[]).filter(f=>f.id!==data.id)}};updateClient(upd);render();return;}
+
+  // ── Inspection ──
+  if(action==='add-visit'){const upd={...cl,inspection:{...(cl.inspection||{}),visits:[...((cl.inspection||{}).visits||[]),{id:uid(),type:'Venue Visit',date:'',time:'',venue:'',address:'',notes:''}]}};updateClient(upd);render();return;}
+  if(action==='del-visit'){const upd={...cl,inspection:{...(cl.inspection||{}),visits:((cl.inspection||{}).visits||[]).filter(v=>v.id!==data.id)}};updateClient(upd);render();return;}
+
+  // ── Team ──
+  if(action==='add-member'){STATE._memberRole='planner';STATE.modal={type:'add-member',title:'Add Team Member'};render();return;}
+  if(action==='set-role'){
+    STATE._memberRole=data.role;
+    document.querySelectorAll('[data-action="set-role"]').forEach(btn=>{
+      btn.className='btn '+(btn.dataset.role===data.role?'btn-dark':'btn-outline');
+      btn.style.flex='1';
+    });
+    return;
+  }
+  if(action==='save-member'){const n=document.getElementById('m-name').value.trim();const u=document.getElementById('m-user').value.trim().toLowerCase();const p=document.getElementById('m-pass').value;if(!n||!u||!p)return;STATE.admins=[...STATE.admins,{id:uid(),name:n,username:u,password:p,role:STATE._memberRole||'planner'}];saveAdmins();closeModal();render();return;}
+  if(action==='del-member'){STATE.admins=STATE.admins.filter(a=>a.id!==data.id);saveAdmins();render();return;}
+  if(action==='manage-access'){const c=STATE.clients.find(x=>x.id===data.id);STATE._modalAccess={...c};STATE.modal={type:'access',title:c.bride+' & '+c.groom+' — Access',cid:data.id,wide:true};render();return;}
+  if(action==='acc-lead'){
+    STATE._modalAccess={...STATE._modalAccess,leadId:data.id||null};
+    // Update buttons without full render
+    document.querySelectorAll('[data-action="acc-lead"]').forEach(btn=>{
+      const isActive=btn.dataset.id===(STATE._modalAccess.leadId||'');
+      btn.className='btn '+(isActive?'btn-dark':'btn-outline')+' btn-sm flex flex-gap';
+      btn.style.alignItems='center';
+    });
+    return;
+  }
+  if(action==='acc-tab'){
+    const tabs=STATE._modalAccess.visibleTabs||[];
+    const has=tabs.includes(data.tab);
+    STATE._modalAccess={...STATE._modalAccess,visibleTabs:has?tabs.filter(t=>t!==data.tab):[...tabs,data.tab]};
+    document.querySelectorAll('[data-action="acc-tab"]').forEach(btn=>{
+      const isActive=(STATE._modalAccess.visibleTabs||[]).includes(btn.dataset.tab);
+      btn.className='btn '+(isActive?'btn-dark':'btn-outline')+' btn-sm';
+    });
+    return;
+  }
+  if(action==='save-access'){
+    const acc=STATE._modalAccess;const cu=document.getElementById('acc-user').value.toLowerCase();const cp=document.getElementById('acc-pass').value;
+    const upd={...STATE.clients.find(x=>x.id===data.cid),...acc,coupleUser:cu,couplePass:cp};
+    STATE.clients=STATE.clients.map(c=>c.id===data.cid?upd:c);saveClients();closeModal();render();return;
+  }
+}
+
+function handleInput(type,el,e){
+  const cl=getClient();
+  if(!cl)return;
+
+  if(type==='arrival-time'||type==='arrival-vendor'||type==='arrival-notes'){
+    const f=type.split('-')[1];
+    const upd={...cl,setup:{...cl.setup,vendorArrivals:(cl.setup.vendorArrivals||[]).map(v=>v.id===el.dataset.id?{...v,[f]:el.value}:v)}};
+    updateClient(upd);return;
+  }
+  if(type==='area-vendor'||type==='area-notes'){
+    const f=type.split('-')[1];
+    const upd={...cl,setup:{...cl.setup,areas:(cl.setup.areas||[]).map(a=>a.id===el.dataset.id?{...a,[f]:el.value}:a)}};
+    updateClient(upd);return;
+  }
+  if(type==='ig-handle'){
+    const upd={...cl,instagramHandles:{...(cl.instagramHandles||{}),[el.dataset.key]:el.value}};
+    updateClient(upd);return;
+  }
+  if(type==='day-label'){
+    const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).map(d=>d.id===el.dataset.id?{...d,label:el.value}:d)}};
+    updateClient(upd);return;
+  }
+  if(type==='item-time'||type==='item-who'||type==='item-action'){
+    const f=type.split('-')[1];
+    const upd={...cl,rundown:{...cl.rundown,days:(cl.rundown.days||[]).map(d=>d.id===el.dataset.dayid?{...d,items:(d.items||[]).map(i=>i.id===el.dataset.iid?{...i,[f]:el.value}:i)}:d)}};
+    updateClient(upd);return;
+  }
+  if(type==='palette-color'){
+    const s=cl.style||{};const p=[...(s.palette||[])];p[parseInt(el.dataset.idx)]=el.value;
+    updateClient({...cl,style:{...s,palette:p}});return;
+  }
+  if(type==='new-color'){STATE._newColor=el.value;return;}
+  if(type==='mood'){updateClient({...cl,style:{...(cl.style||{}),mood:el.value}});return;}
+  if(type==='zone-field'){
+    const zones={...cl.designZones};const z=zones[el.dataset.zone]||{};zones[el.dataset.zone]={...z,fields:{...(z.fields||{}),[el.dataset.key]:el.value}};
+    updateClient({...cl,designZones:zones});return;
+  }
+  if(type==='zone-notes'){
+    const zones={...cl.designZones};zones[el.dataset.zone]={...(zones[el.dataset.zone]||{}),notes:el.value};
+    updateClient({...cl,designZones:zones});return;
+  }
+  if(type==='party-floral'){
+    const s=cl.style||{};updateClient({...cl,style:{...s,partyFlorals:{...(s.partyFlorals||{}),[el.dataset.key]:el.value}}});return;
+  }
+  if(type==='budget-field'){
+    const bl={...cl.budgetLines};
+    const sec=bl[el.dataset.sid]||{};
+    const line={...(sec[el.dataset.key]||{})};
+    line[el.dataset.f]=el.value;
+    if(el.dataset.f==='totalCost'||el.dataset.f==='paymentsMade'){
+      const tot=parseFloat(el.dataset.f==='totalCost'?el.value:(line.totalCost||0))||0;
+      const paid=parseFloat(el.dataset.f==='paymentsMade'?el.value:(line.paymentsMade||0))||0;
+      const pend=Math.max(0,tot-paid);
+      line.pendingPayments=pend>0?pend.toFixed(2):'';
+    }
+    bl[el.dataset.sid]={...sec,[el.dataset.key]:line};
+    updateClient({...cl,budgetLines:bl});return;
+  }
+  if(type==='inspection-field'){
+    updateClient({...cl,inspection:{...(cl.inspection||{}),[el.dataset.key]:el.value}});return;
+  }
+  if(type==='visit-type'||type==='visit-date'||type==='visit-time'||type==='visit-venue'||type==='visit-address'||type==='visit-notes'){
+    const f=type.split('-')[1];
+    const ins=cl.inspection||{};
+    updateClient({...cl,inspection:{...ins,visits:(ins.visits||[]).map(v=>v.id===el.dataset.id?{...v,[f]:el.value}:v)}});return;
+  }
+  // m-url: read on save
+}
+
+function handleChange(type,el,e){
+  if(type==='img-file'){
+    const f=el.files[0];if(!f)return;
+    const r=new FileReader();r.onload=ev=>{STATE._imgData=ev.target.result;STATE._imgFile=f.name;render();};r.readAsDataURL(f);
+    return;
+  }
+  if(type==='doc-file'){
+    const f=el.files[0];if(!f)return;
+    const r=new FileReader();r.onload=ev=>{STATE._docFileData=ev.target.result;STATE._docFile=f.name;render();};r.readAsDataURL(f);
+    return;
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
